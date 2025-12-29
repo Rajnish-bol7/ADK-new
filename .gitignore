@@ -21,10 +21,6 @@ db.sqlite3-journal
 staticfiles/
 media/
 
-# Environment
-.env
-.env.local
-.env.*.local
 
 # IDE
 .idea/
