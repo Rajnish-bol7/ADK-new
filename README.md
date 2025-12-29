@@ -11,7 +11,7 @@ A Django-based platform for building AI agents from visual flow definitions, pow
 - **WebSocket Support**: Real-time text and voice streaming
 - **Background Execution**: Async flow execution with Celery
 - **Scheduled Flows**: Periodic/scheduled flow execution with Celery Beat
-- **Webhooks**: Trigger flows from external systems
+- **Webhooks**: Receive flow configurations from external platforms
 - **Session Management**: Persistent conversations across requests
 
 ## Project Structure
@@ -144,7 +144,19 @@ DELETE /api/v1/sessions/{id}/           # Delete session
 ### Webhooks
 
 ```
-GET/POST /api/v1/webhooks/{path}/       # Trigger flow via webhook
+POST /api/v1/webhook/flow/       # Receive flow JSON configuration from external platform
+```
+
+**Expected JSON payload:**
+```json
+{
+  "id": "flow-uuid",
+  "tenant_id": "tenant-uuid",
+  "flow_name": "my_flow",
+  "description": "Optional description",
+  "nodes": [...],
+  "edges": [...]
+}
 ```
 
 ## WebSocket Endpoints

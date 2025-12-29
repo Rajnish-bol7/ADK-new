@@ -3,7 +3,7 @@ Admin configuration for flow models.
 """
 
 from django.contrib import admin
-from .models import Flow, FlowVersion, Session, Message, FlowExecution, Webhook
+from .models import Flow, FlowVersion, Session, Message, FlowExecution
 
 
 @admin.register(Flow)
@@ -67,9 +67,3 @@ class FlowExecutionAdmin(admin.ModelAdmin):
     readonly_fields = ["id", "started_at", "completed_at"]
 
 
-@admin.register(Webhook)
-class WebhookAdmin(admin.ModelAdmin):
-    list_display = ["path", "flow", "auth_type", "is_active", "last_triggered_at"]
-    list_filter = ["is_active", "auth_type"]
-    search_fields = ["path", "flow__name"]
-    readonly_fields = ["id", "created_at", "last_triggered_at"]

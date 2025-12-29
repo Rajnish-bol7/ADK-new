@@ -723,62 +723,210 @@ def session_messages(request, session_id: UUID):
 # =============================================================================
 
 @csrf_exempt
-@require_http_methods(["GET", "POST"])
-def webhook_trigger(request, webhook_path: str):
+@require_http_methods(["POST"])
+def webhook_flow_config(request):
     """
-    Trigger a flow via webhook.
+    Webhook endpoint to receive flow configuration JSON from external platform.
+    Called when a user saves a flow in the platform.
     
-    GET/POST /api/v1/webhooks/{webhook_path}/
+    POST /api/webhook/flow/
+    
+    Expected JSON payload:
+    {
+        "id": "flow-uuid",
+        "tenant_id": "tenant-uuid",
+        "flow_name": "my_flow",
+        "description": "Flow description (optional)",
+        "nodes": [...],
+        "edges": [...]
+    }
+    
+    This endpoint:
+    1. Creates/updates the tenant
+    2. Creates/updates the flow
+    3. Invalidates the executor cache
+    4. Returns success/error response
     """
-    from flows.models import Webhook
+    # Log incoming request
+    logger.info(f"[WEBHOOK] Received POST request to /api/webhook/flow/")
+    logger.info(f"[WEBHOOK] Request method: {request.method}")
+    logger.info(f"[WEBHOOK] Content-Type: {request.headers.get('Content-Type', 'Not set')}")
+    logger.info(f"[WEBHOOK] Request body length: {len(request.body)} bytes")
     
     try:
-        webhook = Webhook.objects.get(path=webhook_path, is_active=True)
-    except Webhook.DoesNotExist:
-        return JsonResponse({"error": "Webhook not found"}, status=404)
-    
-    # Check method
-    if request.method not in webhook.allowed_methods:
-        return JsonResponse({"error": "Method not allowed"}, status=405)
-    
-    # Get message from body or query params
-    if request.method == "POST":
+        flow_config = json.loads(request.body)
+        logger.info(f"[WEBHOOK] Successfully parsed JSON")
+        
+        # Validate required fields
+        flow_id = flow_config.get("id")
+        if not flow_id:
+            logger.error(f"[WEBHOOK] ERROR: Missing 'id' field")
+            return JsonResponse({
+                "status": "error",
+                "message": "id (flow_id) is required"
+            }, status=400)
+        
+        tenant_id = flow_config.get("tenant_id")
+        if not tenant_id:
+            logger.error(f"[WEBHOOK] ERROR: Missing 'tenant_id' field")
+            return JsonResponse({
+                "status": "error",
+                "message": "tenant_id is required"
+            }, status=400)
+        
+        flow_name = flow_config.get("flow_name")
+        if not flow_name:
+            logger.error(f"[WEBHOOK] ERROR: Missing 'flow_name' field")
+            return JsonResponse({
+                "status": "error",
+                "message": "flow_name is required"
+            }, status=400)
+        
+        nodes = flow_config.get("nodes")
+        if not nodes:
+            logger.error(f"[WEBHOOK] ERROR: Missing 'nodes' field")
+            return JsonResponse({
+                "status": "error",
+                "message": "nodes array is required"
+            }, status=400)
+        
+        logger.info(f"[WEBHOOK] Processing flow: {flow_name} (ID: {flow_id}) for tenant: {tenant_id}")
+        
+        # Convert UUIDs from strings if needed
+        from uuid import UUID as UUIDType
         try:
-            data = json.loads(request.body)
-            message = data.get("message", "")
-        except json.JSONDecodeError:
-            message = request.body.decode("utf-8")
-    else:
-        message = request.GET.get("message", "")
-    
-    if not message:
-        return JsonResponse({"error": "Message is required"}, status=400)
-    
-    # Execute flow
-    executor = get_executor()
-    session_id = request.GET.get("session_id", f"webhook_{webhook_path}")
-    
-    try:
-        response = async_to_sync(executor.run_flow_sync)(
-            tenant_id=str(webhook.flow.tenant.id),
-            flow_id=str(webhook.flow.id),
-            user_id=f"webhook_{webhook_path}",
-            session_id=session_id,
-            message=message,
-        )
+            tenant_uuid = UUIDType(tenant_id) if isinstance(tenant_id, str) else tenant_id
+            flow_uuid = UUIDType(flow_id) if isinstance(flow_id, str) else flow_id
+        except (ValueError, TypeError) as e:
+            logger.error(f"[WEBHOOK] ERROR: Invalid UUID format - tenant_id: {tenant_id}, flow_id: {flow_id}, error: {e}")
+            return JsonResponse({
+                "status": "error",
+                "message": f"Invalid UUID format. tenant_id and flow_id must be valid UUIDs."
+            }, status=400)
         
-        # Update last triggered
-        webhook.last_triggered_at = timezone.now()
-        webhook.save(update_fields=["last_triggered_at"])
+        # Get or create tenant
+        try:
+            tenant = Tenant.objects.get(id=tenant_uuid)
+            logger.info(f"[WEBHOOK] Found existing tenant: {tenant.name}")
+        except Tenant.DoesNotExist:
+            # Create tenant if it doesn't exist
+            # Generate a slug from tenant_id (first 12 chars without dashes)
+            slug_base = str(tenant_uuid).replace('-', '')[:12]
+            tenant = Tenant.objects.create(
+                id=tenant_uuid,
+                name=f"Tenant {slug_base[:8]}",
+                slug=f"tenant-{slug_base}"
+            )
+            logger.info(f"[WEBHOOK] Created new tenant: {tenant.name} (ID: {tenant.id})")
         
+        # Determine trigger type from nodes
+        trigger_type = "chat"  # Default
+        has_call_trigger = any(n.get("type") == "call_start" for n in nodes)
+        has_webhook_trigger = any(n.get("type") == "webhook" for n in nodes)
+        
+        if has_call_trigger:
+            trigger_type = "call"
+        elif has_webhook_trigger:
+            trigger_type = "webhook"
+        else:
+            trigger_type = "chat"  # Chat is default
+        
+        # Extract webhook_path if webhook trigger exists
+        webhook_path = ""
+        if has_webhook_trigger:
+            for node in nodes:
+                if node.get("type") == "webhook":
+                    webhook_data = node.get("data", {})
+                    webhook_path = webhook_data.get("webhookPath", "")
+                    break
+        
+        # Prepare flow_json (nodes, edges, and other metadata)
+        flow_json = {
+            "nodes": nodes,
+            "edges": flow_config.get("edges", []),
+        }
+        # Include any additional fields from the original config
+        for key in ["id", "flow_name", "description"]:
+            if key in flow_config and key not in flow_json:
+                flow_json[key] = flow_config[key]
+        
+        # Create or update flow
+        try:
+            flow, created = Flow.objects.update_or_create(
+                id=flow_uuid,
+                tenant=tenant,
+                defaults={
+                    "name": flow_name,
+                    "description": flow_config.get("description", ""),
+                    "flow_json": flow_json,
+                    "trigger_type": trigger_type,
+                    "webhook_path": webhook_path,
+                    "is_active": True,
+                    "is_published": True,
+                }
+            )
+            
+            if created:
+                logger.info(f"[WEBHOOK] Created new flow: {flow_name} (ID: {flow.id})")
+                action = "created"
+            else:
+                # Increment version on update
+                flow.version += 1
+                flow.save(update_fields=["version", "name", "description", "flow_json", "trigger_type", "webhook_path", "is_active", "is_published", "updated_at"])
+                logger.info(f"[WEBHOOK] Updated existing flow: {flow_name} (ID: {flow.id}, version: {flow.version})")
+                action = "updated"
+            
+            # Invalidate executor cache for this flow
+            try:
+                executor = get_executor()
+                async_to_sync(executor.invalidate_flow_cache)(
+                    str(tenant.id),
+                    str(flow.id),
+                )
+                logger.info(f"[WEBHOOK] Invalidated executor cache for flow: {flow.id}")
+            except Exception as e:
+                logger.warning(f"[WEBHOOK] Failed to invalidate cache: {e}")
+            
+            logger.info(f"[WEBHOOK] SUCCESS: Flow {action} successfully - {flow_name} (ID: {flow_id})")
+            return JsonResponse({
+                "status": "success",
+                "message": f"Flow {action} successfully",
+                "data": {
+                    "tenant_id": str(tenant.id),
+                    "flow_id": str(flow.id),
+                    "flow_name": flow.name,
+                    "version": flow.version,
+                    "trigger_type": flow.trigger_type,
+                }
+            })
+            
+        except Exception as e:
+            logger.error(f"[WEBHOOK] ERROR: Failed to save flow to database: {e}", exc_info=True)
+            return JsonResponse({
+                "status": "error",
+                "message": f"Failed to save flow: {str(e)}"
+            }, status=500)
+        
+    except json.JSONDecodeError as e:
+        logger.error(f"[WEBHOOK] ERROR: Invalid JSON payload: {e}")
+        body_preview = request.body[:500].decode('utf-8', errors='ignore') if request.body else 'Empty'
+        logger.error(f"[WEBHOOK] Request body (first 500 chars): {body_preview}")
         return JsonResponse({
-            "response": response,
-            "session_id": session_id,
-        })
-        
+            "status": "error",
+            "message": "Invalid JSON payload"
+        }, status=400)
+    except ValueError as e:
+        logger.error(f"[WEBHOOK] ERROR: ValueError: {e}", exc_info=True)
+        return JsonResponse({
+            "status": "error",
+            "message": str(e)
+        }, status=400)
     except Exception as e:
-        logger.error(f"Webhook error: {e}")
-        return JsonResponse({"error": str(e)}, status=500)
+        logger.error(f"[WEBHOOK] ERROR: Unexpected exception: {e}", exc_info=True)
+        return JsonResponse({
+            "status": "error",
+            "message": str(e)
+        }, status=500)
 
 
 # =============================================================================

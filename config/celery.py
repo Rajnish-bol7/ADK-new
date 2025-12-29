@@ -4,7 +4,6 @@ Celery configuration for ADK Flow Platform.
 This enables:
 1. Background task execution
 2. Scheduled/periodic flow execution
-3. Async webhook processing
 """
 
 import os

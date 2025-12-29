@@ -25,8 +25,8 @@ urlpatterns = [
     path("sessions/<uuid:session_id>/", views.session_detail, name="api_session_detail"),
     path("sessions/<uuid:session_id>/messages/", views.session_messages, name="api_session_messages"),
     
-    # Webhooks
-    path("webhooks/<str:webhook_path>/", views.webhook_trigger, name="api_webhook_trigger"),
+    # Webhook - Receive flow JSON from external platform
+    path("webhook/flow/", views.webhook_flow_config, name="api_webhook_flow_config"),
     
     # Cache management
     path("cache/invalidate/", views.invalidate_cache, name="api_invalidate_cache"),

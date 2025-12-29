@@ -4,8 +4,7 @@ Celery tasks for background and scheduled flow execution.
 This module provides:
 1. Background flow execution
 2. Scheduled/periodic flow runs
-3. Webhook processing
-4. Batch message processing
+3. Cleanup tasks
 """
 
 import logging
@@ -32,7 +31,6 @@ def run_flow_async(
     
     This is useful for:
     - Long-running flows
-    - Webhook-triggered flows
     - Batch processing
     
     Args:
@@ -171,54 +169,6 @@ def run_scheduled_flow(
         logger.error(f"Scheduled flow not found: {flow_id}")
     except Exception as e:
         logger.error(f"Failed to queue scheduled flow: {e}")
-
-
-@shared_task
-def process_webhook(
-    webhook_id: str,
-    payload: dict,
-    headers: dict,
-):
-    """
-    Process a webhook trigger asynchronously.
-    
-    Args:
-        webhook_id: Webhook identifier
-        payload: Request payload
-        headers: Request headers
-    """
-    from flows.models import Webhook
-    
-    try:
-        webhook = Webhook.objects.select_related('flow', 'flow__tenant').get(
-            id=webhook_id,
-            is_active=True,
-        )
-        
-        # Extract message from payload
-        message = payload.get('message', payload.get('text', str(payload)))
-        session_id = payload.get('session_id', f"webhook_{webhook_id}")
-        
-        # Queue the flow execution
-        run_flow_async.delay(
-            tenant_id=str(webhook.flow.tenant.id),
-            flow_id=str(webhook.flow.id),
-            user_id=f"webhook_{webhook_id}",
-            session_id=session_id,
-            message=message,
-            callback_url=payload.get('callback_url'),
-        )
-        
-        # Update last triggered
-        webhook.last_triggered_at = timezone.now()
-        webhook.save(update_fields=['last_triggered_at'])
-        
-        logger.info(f"Webhook processed: {webhook_id}")
-        
-    except Webhook.DoesNotExist:
-        logger.error(f"Webhook not found: {webhook_id}")
-    except Exception as e:
-        logger.error(f"Failed to process webhook: {e}")
 
 
 @shared_task
