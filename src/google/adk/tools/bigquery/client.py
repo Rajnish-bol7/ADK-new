@@ -36,34 +36,34 @@ def get_bigquery_client(
     location: Optional[str] = None,
     user_agent: Optional[Union[str, List[str]]] = None,
 ) -> bigquery.Client:
-  """Get a BigQuery client.
+    """Get a BigQuery client.
 
-  Args:
-    project: The GCP project ID.
-    credentials: The credentials to use for the request.
-    location: The location of the BigQuery client.
-    user_agent: The user agent to use for the request.
+    Args:
+      project: The GCP project ID.
+      credentials: The credentials to use for the request.
+      location: The location of the BigQuery client.
+      user_agent: The user agent to use for the request.
 
-  Returns:
-    A BigQuery client.
-  """
+    Returns:
+      A BigQuery client.
+    """
 
-  user_agents = [USER_AGENT]
-  if user_agent:
-    if isinstance(user_agent, str):
-      user_agents.append(user_agent)
-    else:
-      user_agents.extend([ua for ua in user_agent if ua])
+    user_agents = [USER_AGENT]
+    if user_agent:
+        if isinstance(user_agent, str):
+            user_agents.append(user_agent)
+        else:
+            user_agents.extend([ua for ua in user_agent if ua])
 
-  client_info = google.api_core.client_info.ClientInfo(
-      user_agent=" ".join(user_agents)
-  )
+    client_info = google.api_core.client_info.ClientInfo(
+        user_agent=" ".join(user_agents)
+    )
 
-  bigquery_client = bigquery.Client(
-      project=project,
-      credentials=credentials,
-      location=location,
-      client_info=client_info,
-  )
+    bigquery_client = bigquery.Client(
+        project=project,
+        credentials=credentials,
+        location=location,
+        client_info=client_info,
+    )
 
-  return bigquery_client
+    return bigquery_client

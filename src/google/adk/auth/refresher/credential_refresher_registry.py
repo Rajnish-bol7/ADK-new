@@ -27,33 +27,33 @@ from .base_credential_refresher import BaseCredentialRefresher
 
 @experimental
 class CredentialRefresherRegistry:
-  """Registry for credential refresher instances."""
+    """Registry for credential refresher instances."""
 
-  def __init__(self):
-    self._refreshers: Dict[AuthCredentialTypes, BaseCredentialRefresher] = {}
+    def __init__(self):
+        self._refreshers: Dict[AuthCredentialTypes, BaseCredentialRefresher] = {}
 
-  def register(
-      self,
-      credential_type: AuthCredentialTypes,
-      refresher_instance: BaseCredentialRefresher,
-  ) -> None:
-    """Register a refresher instance for a credential type.
+    def register(
+        self,
+        credential_type: AuthCredentialTypes,
+        refresher_instance: BaseCredentialRefresher,
+    ) -> None:
+        """Register a refresher instance for a credential type.
 
-    Args:
-        credential_type: The credential type to register for.
-        refresher_instance: The refresher instance to register.
-    """
-    self._refreshers[credential_type] = refresher_instance
+        Args:
+            credential_type: The credential type to register for.
+            refresher_instance: The refresher instance to register.
+        """
+        self._refreshers[credential_type] = refresher_instance
 
-  def get_refresher(
-      self, credential_type: AuthCredentialTypes
-  ) -> Optional[BaseCredentialRefresher]:
-    """Get the refresher instance for a credential type.
+    def get_refresher(
+        self, credential_type: AuthCredentialTypes
+    ) -> Optional[BaseCredentialRefresher]:
+        """Get the refresher instance for a credential type.
 
-    Args:
-        credential_type: The credential type to get refresher for.
+        Args:
+            credential_type: The credential type to get refresher for.
 
-    Returns:
-        The refresher instance if registered, None otherwise.
-    """
-    return self._refreshers.get(credential_type)
+        Returns:
+            The refresher instance if registered, None otherwise.
+        """
+        return self._refreshers.get(credential_type)

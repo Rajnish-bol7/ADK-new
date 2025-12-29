@@ -27,240 +27,238 @@ from ...features import FeatureName
 
 @experimental(FeatureName.COMPUTER_USE)
 class ComputerEnvironment(str, Enum):
-  """Case insensitive enum for computer environments."""
+    """Case insensitive enum for computer environments."""
 
-  ENVIRONMENT_UNSPECIFIED = "ENVIRONMENT_UNSPECIFIED"
-  """Defaults to browser."""
-  ENVIRONMENT_BROWSER = "ENVIRONMENT_BROWSER"
-  """Operates in a web browser."""
+    ENVIRONMENT_UNSPECIFIED = "ENVIRONMENT_UNSPECIFIED"
+    """Defaults to browser."""
+    ENVIRONMENT_BROWSER = "ENVIRONMENT_BROWSER"
+    """Operates in a web browser."""
 
 
 @experimental(FeatureName.COMPUTER_USE)
 class ComputerState(pydantic.BaseModel):
-  """Represents the current state of the computer environment.
+    """Represents the current state of the computer environment.
 
-  Attributes:
-    screenshot: The screenshot in PNG format as bytes.
-    url: The current URL of the webpage being displayed.
-  """
+    Attributes:
+      screenshot: The screenshot in PNG format as bytes.
+      url: The current URL of the webpage being displayed.
+    """
 
-  screenshot: bytes = pydantic.Field(
-      default=None, description="Screenshot in PNG format"
-  )
-  url: Optional[str] = pydantic.Field(
-      default=None, description="Current webpage URL"
-  )
+    screenshot: bytes = pydantic.Field(
+        default=None, description="Screenshot in PNG format"
+    )
+    url: Optional[str] = pydantic.Field(default=None, description="Current webpage URL")
 
 
 @experimental(FeatureName.COMPUTER_USE)
 class BaseComputer(abc.ABC):
-  """async defines an interface for computer environments.
+    """async defines an interface for computer environments.
 
-  This abstract base class async defines the standard interface for controlling
-  computer environments, including web browsers and other interactive systems.
-  """
-
-  @abc.abstractmethod
-  async def screen_size(self) -> tuple[int, int]:
-    """Returns the screen size of the environment.
-
-    Returns:
-      A tuple of (width, height) in pixels.
+    This abstract base class async defines the standard interface for controlling
+    computer environments, including web browsers and other interactive systems.
     """
 
-  @abc.abstractmethod
-  async def open_web_browser(self) -> ComputerState:
-    """Opens the web browser.
+    @abc.abstractmethod
+    async def screen_size(self) -> tuple[int, int]:
+        """Returns the screen size of the environment.
 
-    Returns:
-      The current state after opening the browser.
-    """
+        Returns:
+          A tuple of (width, height) in pixels.
+        """
 
-  @abc.abstractmethod
-  async def click_at(self, x: int, y: int) -> ComputerState:
-    """Clicks at a specific x, y coordinate on the webpage.
+    @abc.abstractmethod
+    async def open_web_browser(self) -> ComputerState:
+        """Opens the web browser.
 
-    The 'x' and 'y' values are absolute values, scaled to the height and width of the screen.
+        Returns:
+          The current state after opening the browser.
+        """
 
-    Args:
-      x: The x-coordinate to click at.
-      y: The y-coordinate to click at.
+    @abc.abstractmethod
+    async def click_at(self, x: int, y: int) -> ComputerState:
+        """Clicks at a specific x, y coordinate on the webpage.
 
-    Returns:
-      The current state after clicking.
-    """
+        The 'x' and 'y' values are absolute values, scaled to the height and width of the screen.
 
-  @abc.abstractmethod
-  async def hover_at(self, x: int, y: int) -> ComputerState:
-    """Hovers at a specific x, y coordinate on the webpage.
+        Args:
+          x: The x-coordinate to click at.
+          y: The y-coordinate to click at.
 
-    May be used to explore sub-menus that appear on hover.
-    The 'x' and 'y' values are absolute values, scaled to the height and width of the screen.
+        Returns:
+          The current state after clicking.
+        """
 
-    Args:
-      x: The x-coordinate to hover at.
-      y: The y-coordinate to hover at.
+    @abc.abstractmethod
+    async def hover_at(self, x: int, y: int) -> ComputerState:
+        """Hovers at a specific x, y coordinate on the webpage.
 
-    Returns:
-      The current state after hovering.
-    """
+        May be used to explore sub-menus that appear on hover.
+        The 'x' and 'y' values are absolute values, scaled to the height and width of the screen.
 
-  @abc.abstractmethod
-  async def type_text_at(
-      self,
-      x: int,
-      y: int,
-      text: str,
-      press_enter: bool = True,
-      clear_before_typing: bool = True,
-  ) -> ComputerState:
-    """Types text at a specific x, y coordinate.
+        Args:
+          x: The x-coordinate to hover at.
+          y: The y-coordinate to hover at.
 
-    The system automatically presses ENTER after typing. To disable this, set `press_enter` to False.
-    The system automatically clears any existing content before typing the specified `text`. To disable this, set `clear_before_typing` to False.
-    The 'x' and 'y' values are absolute values, scaled to the height and width of the screen.
+        Returns:
+          The current state after hovering.
+        """
 
-    Args:
-      x: The x-coordinate to type at.
-      y: The y-coordinate to type at.
-      text: The text to type.
-      press_enter: Whether to press ENTER after typing.
-      clear_before_typing: Whether to clear existing content before typing.
+    @abc.abstractmethod
+    async def type_text_at(
+        self,
+        x: int,
+        y: int,
+        text: str,
+        press_enter: bool = True,
+        clear_before_typing: bool = True,
+    ) -> ComputerState:
+        """Types text at a specific x, y coordinate.
 
-    Returns:
-      The current state after typing.
-    """
+        The system automatically presses ENTER after typing. To disable this, set `press_enter` to False.
+        The system automatically clears any existing content before typing the specified `text`. To disable this, set `clear_before_typing` to False.
+        The 'x' and 'y' values are absolute values, scaled to the height and width of the screen.
 
-  @abc.abstractmethod
-  async def scroll_document(
-      self, direction: Literal["up", "down", "left", "right"]
-  ) -> ComputerState:
-    """Scrolls the entire webpage "up", "down", "left" or "right" based on direction.
+        Args:
+          x: The x-coordinate to type at.
+          y: The y-coordinate to type at.
+          text: The text to type.
+          press_enter: Whether to press ENTER after typing.
+          clear_before_typing: Whether to clear existing content before typing.
 
-    Args:
-      direction: The direction to scroll.
+        Returns:
+          The current state after typing.
+        """
 
-    Returns:
-      The current state after scrolling.
-    """
+    @abc.abstractmethod
+    async def scroll_document(
+        self, direction: Literal["up", "down", "left", "right"]
+    ) -> ComputerState:
+        """Scrolls the entire webpage "up", "down", "left" or "right" based on direction.
 
-  @abc.abstractmethod
-  async def scroll_at(
-      self,
-      x: int,
-      y: int,
-      direction: Literal["up", "down", "left", "right"],
-      magnitude: int,
-  ) -> ComputerState:
-    """Scrolls up, down, right, or left at a x, y coordinate by magnitude.
+        Args:
+          direction: The direction to scroll.
 
-    The 'x' and 'y' values are absolute values, scaled to the height and width of the screen.
+        Returns:
+          The current state after scrolling.
+        """
 
-    Args:
-      x: The x-coordinate to scroll at.
-      y: The y-coordinate to scroll at.
-      direction: The direction to scroll.
-      magnitude: The amount to scroll.
+    @abc.abstractmethod
+    async def scroll_at(
+        self,
+        x: int,
+        y: int,
+        direction: Literal["up", "down", "left", "right"],
+        magnitude: int,
+    ) -> ComputerState:
+        """Scrolls up, down, right, or left at a x, y coordinate by magnitude.
 
-    Returns:
-      The current state after scrolling.
-    """
+        The 'x' and 'y' values are absolute values, scaled to the height and width of the screen.
 
-  @abc.abstractmethod
-  async def wait(self, seconds: int) -> ComputerState:
-    """Waits for n seconds to allow unfinished webpage processes to complete.
+        Args:
+          x: The x-coordinate to scroll at.
+          y: The y-coordinate to scroll at.
+          direction: The direction to scroll.
+          magnitude: The amount to scroll.
 
-    Args:
-      seconds: The number of seconds to wait.
+        Returns:
+          The current state after scrolling.
+        """
 
-    Returns:
-      The current state after waiting.
-    """
+    @abc.abstractmethod
+    async def wait(self, seconds: int) -> ComputerState:
+        """Waits for n seconds to allow unfinished webpage processes to complete.
 
-  @abc.abstractmethod
-  async def go_back(self) -> ComputerState:
-    """Navigates back to the previous webpage in the browser history.
+        Args:
+          seconds: The number of seconds to wait.
 
-    Returns:
-      The current state after navigating back.
-    """
+        Returns:
+          The current state after waiting.
+        """
 
-  @abc.abstractmethod
-  async def go_forward(self) -> ComputerState:
-    """Navigates forward to the next webpage in the browser history.
+    @abc.abstractmethod
+    async def go_back(self) -> ComputerState:
+        """Navigates back to the previous webpage in the browser history.
 
-    Returns:
-      The current state after navigating forward.
-    """
+        Returns:
+          The current state after navigating back.
+        """
 
-  @abc.abstractmethod
-  async def search(self) -> ComputerState:
-    """Directly jumps to a search engine home page.
+    @abc.abstractmethod
+    async def go_forward(self) -> ComputerState:
+        """Navigates forward to the next webpage in the browser history.
 
-    Used when you need to start with a search. For example, this is used when
-    the current website doesn't have the information needed or because a new
-    task is being started.
+        Returns:
+          The current state after navigating forward.
+        """
 
-    Returns:
-      The current state after navigating to search.
-    """
+    @abc.abstractmethod
+    async def search(self) -> ComputerState:
+        """Directly jumps to a search engine home page.
 
-  @abc.abstractmethod
-  async def navigate(self, url: str) -> ComputerState:
-    """Navigates directly to a specified URL.
+        Used when you need to start with a search. For example, this is used when
+        the current website doesn't have the information needed or because a new
+        task is being started.
 
-    Args:
-      url: The URL to navigate to.
+        Returns:
+          The current state after navigating to search.
+        """
 
-    Returns:
-      The current state after navigation.
-    """
+    @abc.abstractmethod
+    async def navigate(self, url: str) -> ComputerState:
+        """Navigates directly to a specified URL.
 
-  @abc.abstractmethod
-  async def key_combination(self, keys: list[str]) -> ComputerState:
-    """Presses keyboard keys and combinations, such as "control+c" or "enter".
+        Args:
+          url: The URL to navigate to.
 
-    Args:
-      keys: List of keys to press in combination.
+        Returns:
+          The current state after navigation.
+        """
 
-    Returns:
-      The current state after key press.
-    """
+    @abc.abstractmethod
+    async def key_combination(self, keys: list[str]) -> ComputerState:
+        """Presses keyboard keys and combinations, such as "control+c" or "enter".
 
-  @abc.abstractmethod
-  async def drag_and_drop(
-      self, x: int, y: int, destination_x: int, destination_y: int
-  ) -> ComputerState:
-    """Drag and drop an element from a x, y coordinate to a destination destination_y, destination_x coordinate.
+        Args:
+          keys: List of keys to press in combination.
 
-    The 'x', 'y', 'destination_y' and 'destination_x' values are absolute values, scaled to the height and width of the screen.
+        Returns:
+          The current state after key press.
+        """
 
-    Args:
-      x: The x-coordinate to start dragging from.
-      y: The y-coordinate to start dragging from.
-      destination_x: The x-coordinate to drop at.
-      destination_y: The y-coordinate to drop at.
+    @abc.abstractmethod
+    async def drag_and_drop(
+        self, x: int, y: int, destination_x: int, destination_y: int
+    ) -> ComputerState:
+        """Drag and drop an element from a x, y coordinate to a destination destination_y, destination_x coordinate.
 
-    Returns:
-      The current state after drag and drop.
-    """
+        The 'x', 'y', 'destination_y' and 'destination_x' values are absolute values, scaled to the height and width of the screen.
 
-  @abc.abstractmethod
-  async def current_state(self) -> ComputerState:
-    """Returns the current state of the current webpage.
+        Args:
+          x: The x-coordinate to start dragging from.
+          y: The y-coordinate to start dragging from.
+          destination_x: The x-coordinate to drop at.
+          destination_y: The y-coordinate to drop at.
 
-    Returns:
-      The current environment state.
-    """
+        Returns:
+          The current state after drag and drop.
+        """
 
-  async def initialize(self) -> None:
-    """Initialize the computer."""
-    pass
+    @abc.abstractmethod
+    async def current_state(self) -> ComputerState:
+        """Returns the current state of the current webpage.
 
-  async def close(self) -> None:
-    """Cleanup resource of the computer."""
-    pass
+        Returns:
+          The current environment state.
+        """
 
-  @abc.abstractmethod
-  async def environment(self) -> ComputerEnvironment:
-    """Returns the environment of the computer."""
+    async def initialize(self) -> None:
+        """Initialize the computer."""
+        pass
+
+    async def close(self) -> None:
+        """Cleanup resource of the computer."""
+        pass
+
+    @abc.abstractmethod
+    async def environment(self) -> ComputerEnvironment:
+        """Returns the environment of the computer."""

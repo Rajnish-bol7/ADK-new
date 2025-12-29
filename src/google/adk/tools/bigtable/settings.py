@@ -22,7 +22,7 @@ from ...features import FeatureName
 
 @experimental(FeatureName.BIGTABLE_TOOL_SETTINGS)
 class BigtableToolSettings(BaseModel):
-  """Settings for Bigtable tools."""
+    """Settings for Bigtable tools."""
 
-  max_query_result_rows: int = 50
-  """Maximum number of rows to return from a query result."""
+    max_query_result_rows: int = 50
+    """Maximum number of rows to return from a query result."""

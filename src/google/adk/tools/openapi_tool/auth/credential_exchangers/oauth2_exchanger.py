@@ -26,92 +26,90 @@ from .base_credential_exchanger import BaseAuthCredentialExchanger
 
 
 class OAuth2CredentialExchanger(BaseAuthCredentialExchanger):
-  """Fetches credentials for OAuth2 and OpenID Connect."""
+    """Fetches credentials for OAuth2 and OpenID Connect."""
 
-  def _check_scheme_credential_type(
-      self,
-      auth_scheme: AuthScheme,
-      auth_credential: Optional[AuthCredential] = None,
-  ):
-    if not auth_credential:
-      raise ValueError(
-          "auth_credential is empty. Please create AuthCredential using"
-          " OAuth2Auth."
-      )
-
-    if auth_scheme.type_ not in (
-        AuthSchemeType.openIdConnect,
-        AuthSchemeType.oauth2,
+    def _check_scheme_credential_type(
+        self,
+        auth_scheme: AuthScheme,
+        auth_credential: Optional[AuthCredential] = None,
     ):
-      raise ValueError(
-          "Invalid security scheme, expect AuthSchemeType.openIdConnect or "
-          f"AuthSchemeType.oauth2 auth scheme, but got {auth_scheme.type_}"
-      )
+        if not auth_credential:
+            raise ValueError(
+                "auth_credential is empty. Please create AuthCredential using"
+                " OAuth2Auth."
+            )
 
-    if not auth_credential.oauth2 and not auth_credential.http:
-      raise ValueError(
-          "auth_credential is not configured with oauth2. Please"
-          " create AuthCredential and set OAuth2Auth."
-      )
+        if auth_scheme.type_ not in (
+            AuthSchemeType.openIdConnect,
+            AuthSchemeType.oauth2,
+        ):
+            raise ValueError(
+                "Invalid security scheme, expect AuthSchemeType.openIdConnect or "
+                f"AuthSchemeType.oauth2 auth scheme, but got {auth_scheme.type_}"
+            )
 
-  def generate_auth_token(
-      self,
-      auth_credential: Optional[AuthCredential] = None,
-  ) -> AuthCredential:
-    """Generates an auth token from the authorization response.
+        if not auth_credential.oauth2 and not auth_credential.http:
+            raise ValueError(
+                "auth_credential is not configured with oauth2. Please"
+                " create AuthCredential and set OAuth2Auth."
+            )
 
-    Args:
-        auth_scheme: The OpenID Connect or OAuth2 auth scheme.
-        auth_credential: The auth credential.
+    def generate_auth_token(
+        self,
+        auth_credential: Optional[AuthCredential] = None,
+    ) -> AuthCredential:
+        """Generates an auth token from the authorization response.
 
-    Returns:
-        An AuthCredential object containing the HTTP bearer access token. If the
-        HTTP bearer token cannot be generated, return the original credential.
-    """
+        Args:
+            auth_scheme: The OpenID Connect or OAuth2 auth scheme.
+            auth_credential: The auth credential.
 
-    if not auth_credential.oauth2.access_token:
-      return auth_credential
+        Returns:
+            An AuthCredential object containing the HTTP bearer access token. If the
+            HTTP bearer token cannot be generated, return the original credential.
+        """
 
-    # Return the access token as a bearer token.
-    updated_credential = AuthCredential(
-        auth_type=AuthCredentialTypes.HTTP,  # Store as a bearer token
-        http=HttpAuth(
-            scheme="bearer",
-            credentials=HttpCredentials(
-                token=auth_credential.oauth2.access_token
+        if not auth_credential.oauth2.access_token:
+            return auth_credential
+
+        # Return the access token as a bearer token.
+        updated_credential = AuthCredential(
+            auth_type=AuthCredentialTypes.HTTP,  # Store as a bearer token
+            http=HttpAuth(
+                scheme="bearer",
+                credentials=HttpCredentials(token=auth_credential.oauth2.access_token),
             ),
-        ),
-    )
-    return updated_credential
+        )
+        return updated_credential
 
-  def exchange_credential(
-      self,
-      auth_scheme: AuthScheme,
-      auth_credential: Optional[AuthCredential] = None,
-  ) -> AuthCredential:
-    """Exchanges the OpenID Connect auth credential for an access token or an auth URI.
+    def exchange_credential(
+        self,
+        auth_scheme: AuthScheme,
+        auth_credential: Optional[AuthCredential] = None,
+    ) -> AuthCredential:
+        """Exchanges the OpenID Connect auth credential for an access token or an auth URI.
 
-    Args:
-        auth_scheme: The auth scheme.
-        auth_credential: The auth credential.
+        Args:
+            auth_scheme: The auth scheme.
+            auth_credential: The auth credential.
 
-    Returns:
-        An AuthCredential object containing the HTTP Bearer access token.
+        Returns:
+            An AuthCredential object containing the HTTP Bearer access token.
 
-    Raises:
-        ValueError: If the auth scheme or auth credential is invalid.
-    """
-    # TODO(cheliu): Implement token refresh flow
+        Raises:
+            ValueError: If the auth scheme or auth credential is invalid.
+        """
+        # TODO(cheliu): Implement token refresh flow
 
-    self._check_scheme_credential_type(auth_scheme, auth_credential)
+        self._check_scheme_credential_type(auth_scheme, auth_credential)
 
-    # If token is already HTTPBearer token, do nothing assuming that this token
-    #  is valid.
-    if auth_credential.http:
-      return auth_credential
+        # If token is already HTTPBearer token, do nothing assuming that this token
+        #  is valid.
+        if auth_credential.http:
+            return auth_credential
 
-    # If access token is exchanged, exchange a HTTPBearer token.
-    if auth_credential.oauth2.access_token:
-      return self.generate_auth_token(auth_credential)
+        # If access token is exchanged, exchange a HTTPBearer token.
+        if auth_credential.oauth2.access_token:
+            return self.generate_auth_token(auth_credential)
 
-    return None
+        return None

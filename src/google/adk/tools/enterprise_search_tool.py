@@ -25,46 +25,46 @@ from .base_tool import BaseTool
 from .tool_context import ToolContext
 
 if TYPE_CHECKING:
-  from ..models import LlmRequest
+    from ..models import LlmRequest
 
 
 class EnterpriseWebSearchTool(BaseTool):
-  """A Gemini 2+ built-in tool using web grounding for Enterprise compliance.
+    """A Gemini 2+ built-in tool using web grounding for Enterprise compliance.
 
-  See the documentation for more details:
-  https://cloud.google.com/vertex-ai/generative-ai/docs/grounding/web-grounding-enterprise.
-  """
+    See the documentation for more details:
+    https://cloud.google.com/vertex-ai/generative-ai/docs/grounding/web-grounding-enterprise.
+    """
 
-  def __init__(self):
-    """Initializes the Vertex AI Search tool."""
-    # Name and description are not used because this is a model built-in tool.
-    super().__init__(
-        name='enterprise_web_search', description='enterprise_web_search'
-    )
-
-  @override
-  async def process_llm_request(
-      self,
-      *,
-      tool_context: ToolContext,
-      llm_request: LlmRequest,
-  ) -> None:
-    if is_gemini_model(llm_request.model):
-      if is_gemini_1_model(llm_request.model) and llm_request.config.tools:
-        raise ValueError(
-            'Enterprise web search tool cannot be used with other tools in'
-            ' Gemini 1.x.'
+    def __init__(self):
+        """Initializes the Vertex AI Search tool."""
+        # Name and description are not used because this is a model built-in tool.
+        super().__init__(
+            name="enterprise_web_search", description="enterprise_web_search"
         )
-      llm_request.config = llm_request.config or types.GenerateContentConfig()
-      llm_request.config.tools = llm_request.config.tools or []
-      llm_request.config.tools.append(
-          types.Tool(enterprise_web_search=types.EnterpriseWebSearch())
-      )
-    else:
-      raise ValueError(
-          'Enterprise web search tool is not supported for model'
-          f' {llm_request.model}'
-      )
+
+    @override
+    async def process_llm_request(
+        self,
+        *,
+        tool_context: ToolContext,
+        llm_request: LlmRequest,
+    ) -> None:
+        if is_gemini_model(llm_request.model):
+            if is_gemini_1_model(llm_request.model) and llm_request.config.tools:
+                raise ValueError(
+                    "Enterprise web search tool cannot be used with other tools in"
+                    " Gemini 1.x."
+                )
+            llm_request.config = llm_request.config or types.GenerateContentConfig()
+            llm_request.config.tools = llm_request.config.tools or []
+            llm_request.config.tools.append(
+                types.Tool(enterprise_web_search=types.EnterpriseWebSearch())
+            )
+        else:
+            raise ValueError(
+                "Enterprise web search tool is not supported for model"
+                f" {llm_request.model}"
+            )
 
 
 enterprise_web_search_tool = EnterpriseWebSearchTool()

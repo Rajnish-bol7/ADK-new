@@ -29,10 +29,10 @@ from .variant_utils import GoogleLLMVariant
 
 
 def can_use_output_schema_with_tools(model: Union[str, BaseLlm]):
-  """Returns True if output schema with tools is supported."""
-  model_string = model if isinstance(model, str) else model.model
+    """Returns True if output schema with tools is supported."""
+    model_string = model if isinstance(model, str) else model.model
 
-  return (
-      get_google_llm_variant() == GoogleLLMVariant.VERTEX_AI
-      and is_gemini_2_or_above(model_string)
-  )
+    return (
+        get_google_llm_variant() == GoogleLLMVariant.VERTEX_AI
+        and is_gemini_2_or_above(model_string)
+    )

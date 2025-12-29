@@ -21,17 +21,17 @@ from pydantic import ConfigDict
 
 
 class TranscriptionEntry(BaseModel):
-  """Store the data that can be used for transcription."""
+    """Store the data that can be used for transcription."""
 
-  model_config = ConfigDict(
-      arbitrary_types_allowed=True,
-      extra='forbid',
-  )
-  """The pydantic model config."""
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        extra="forbid",
+    )
+    """The pydantic model config."""
 
-  role: Optional[str] = None
-  """The role that created this data, typically "user" or "model". For function 
+    role: Optional[str] = None
+    """The role that created this data, typically "user" or "model". For function 
   call, this is None."""
 
-  data: Union[types.Blob, types.Content]
-  """The data that can be used for transcription"""
+    data: Union[types.Blob, types.Content]
+    """The data that can be used for transcription"""

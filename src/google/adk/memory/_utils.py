@@ -19,5 +19,5 @@ from datetime import datetime
 
 
 def format_timestamp(timestamp: float) -> str:
-  """Formats the timestamp of the memory entry."""
-  return datetime.fromtimestamp(timestamp).isoformat()
+    """Formats the timestamp of the memory entry."""
+    return datetime.fromtimestamp(timestamp).isoformat()

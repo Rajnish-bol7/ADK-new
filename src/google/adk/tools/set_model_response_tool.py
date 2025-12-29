@@ -27,86 +27,89 @@ from ._automatic_function_calling_util import build_function_declaration
 from .base_tool import BaseTool
 from .tool_context import ToolContext
 
-MODEL_JSON_RESPONSE_KEY = 'temp:__adk_model_response__'
+MODEL_JSON_RESPONSE_KEY = "temp:__adk_model_response__"
 
 
 class SetModelResponseTool(BaseTool):
-  """Internal tool used for output schema workaround.
+    """Internal tool used for output schema workaround.
 
-  This tool allows the model to set its final response when output_schema
-  is configured alongside other tools. The model should use this tool to
-  provide its final structured response instead of outputting text directly.
-  """
-
-  def __init__(self, output_schema: type[BaseModel]):
-    """Initialize the tool with the expected output schema.
-
-    Args:
-      output_schema: The pydantic model class defining the expected output
-        structure.
+    This tool allows the model to set its final response when output_schema
+    is configured alongside other tools. The model should use this tool to
+    provide its final structured response instead of outputting text directly.
     """
-    self.output_schema = output_schema
 
-    # Create a function that matches the output schema
-    def set_model_response() -> str:
-      """Set your final response using the required output schema.
+    def __init__(self, output_schema: type[BaseModel]):
+        """Initialize the tool with the expected output schema.
 
-      Use this tool to provide your final structured answer instead
-      of outputting text directly.
-      """
-      return 'Response set successfully.'
+        Args:
+          output_schema: The pydantic model class defining the expected output
+            structure.
+        """
+        self.output_schema = output_schema
 
-    # Add the schema fields as parameters to the function dynamically
-    import inspect
+        # Create a function that matches the output schema
+        def set_model_response() -> str:
+            """Set your final response using the required output schema.
 
-    schema_fields = output_schema.model_fields
-    params = []
-    for field_name, field_info in schema_fields.items():
-      param = inspect.Parameter(
-          field_name,
-          inspect.Parameter.KEYWORD_ONLY,
-          annotation=field_info.annotation,
-      )
-      params.append(param)
+            Use this tool to provide your final structured answer instead
+            of outputting text directly.
+            """
+            return "Response set successfully."
 
-    # Create new signature with schema parameters
-    new_sig = inspect.Signature(parameters=params)
-    setattr(set_model_response, '__signature__', new_sig)
+        # Add the schema fields as parameters to the function dynamically
+        import inspect
 
-    self.func = set_model_response
+        schema_fields = output_schema.model_fields
+        params = []
+        for field_name, field_info in schema_fields.items():
+            param = inspect.Parameter(
+                field_name,
+                inspect.Parameter.KEYWORD_ONLY,
+                annotation=field_info.annotation,
+            )
+            params.append(param)
 
-    super().__init__(
-        name=self.func.__name__,
-        description=self.func.__doc__.strip() if self.func.__doc__ else '',
-    )
+        # Create new signature with schema parameters
+        new_sig = inspect.Signature(parameters=params)
+        setattr(set_model_response, "__signature__", new_sig)
 
-  @override
-  def _get_declaration(self) -> Optional[types.FunctionDeclaration]:
-    """Gets the OpenAPI specification of this tool."""
-    function_decl = types.FunctionDeclaration.model_validate(
-        build_function_declaration(
-            func=self.func,
-            ignore_params=[],
-            variant=self._api_variant,
+        self.func = set_model_response
+
+        super().__init__(
+            name=self.func.__name__,
+            description=self.func.__doc__.strip() if self.func.__doc__ else "",
         )
-    )
-    return function_decl
 
-  @override
-  async def run_async(
-      self, *, args: dict[str, Any], tool_context: ToolContext  # pylint: disable=unused-argument
-  ) -> dict[str, Any]:
-    """Process the model's response and return the validated dict.
+    @override
+    def _get_declaration(self) -> Optional[types.FunctionDeclaration]:
+        """Gets the OpenAPI specification of this tool."""
+        function_decl = types.FunctionDeclaration.model_validate(
+            build_function_declaration(
+                func=self.func,
+                ignore_params=[],
+                variant=self._api_variant,
+            )
+        )
+        return function_decl
 
-    Args:
-      args: The structured response data matching the output schema.
-      tool_context: Tool execution context.
+    @override
+    async def run_async(
+        self,
+        *,
+        args: dict[str, Any],
+        tool_context: ToolContext,  # pylint: disable=unused-argument
+    ) -> dict[str, Any]:
+        """Process the model's response and return the validated dict.
 
-    Returns:
-      The validated response as dict.
-    """
-    # Validate the input matches the expected schema
-    validated_response = self.output_schema.model_validate(args)
+        Args:
+          args: The structured response data matching the output schema.
+          tool_context: Tool execution context.
 
-    # Return the validated dict directly
-    return validated_response.model_dump()
+        Returns:
+          The validated response as dict.
+        """
+        # Validate the input matches the expected schema
+        validated_response = self.output_schema.model_validate(args)
+
+        # Return the validated dict directly
+        return validated_response.model_dump()

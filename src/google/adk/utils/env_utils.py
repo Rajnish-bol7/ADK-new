@@ -23,37 +23,37 @@ from __future__ import annotations
 import os
 
 
-def is_env_enabled(env_var_name: str, default: str = '0') -> bool:
-  """Check if an environment variable is enabled.
+def is_env_enabled(env_var_name: str, default: str = "0") -> bool:
+    """Check if an environment variable is enabled.
 
-  An environment variable is considered enabled if its value (case-insensitive)
-  is 'true' or '1'.
+    An environment variable is considered enabled if its value (case-insensitive)
+    is 'true' or '1'.
 
-  Args:
-    env_var_name: The name of the environment variable to check.
-    default: The default value to use if the environment variable is not set.
-      Defaults to '0'.
+    Args:
+      env_var_name: The name of the environment variable to check.
+      default: The default value to use if the environment variable is not set.
+        Defaults to '0'.
 
-  Returns:
-    True if the environment variable is enabled, False otherwise.
+    Returns:
+      True if the environment variable is enabled, False otherwise.
 
-  Examples:
-    >>> os.environ['MY_FLAG'] = 'true'
-    >>> is_env_enabled('MY_FLAG')
-    True
+    Examples:
+      >>> os.environ['MY_FLAG'] = 'true'
+      >>> is_env_enabled('MY_FLAG')
+      True
 
-    >>> os.environ['MY_FLAG'] = '1'
-    >>> is_env_enabled('MY_FLAG')
-    True
+      >>> os.environ['MY_FLAG'] = '1'
+      >>> is_env_enabled('MY_FLAG')
+      True
 
-    >>> os.environ['MY_FLAG'] = 'false'
-    >>> is_env_enabled('MY_FLAG')
-    False
+      >>> os.environ['MY_FLAG'] = 'false'
+      >>> is_env_enabled('MY_FLAG')
+      False
 
-    >>> is_env_enabled('NONEXISTENT_FLAG')
-    False
+      >>> is_env_enabled('NONEXISTENT_FLAG')
+      False
 
-    >>> is_env_enabled('NONEXISTENT_FLAG', default='1')
-    True
-  """
-  return os.environ.get(env_var_name, default).lower() in ['true', '1']
+      >>> is_env_enabled('NONEXISTENT_FLAG', default='1')
+      True
+    """
+    return os.environ.get(env_var_name, default).lower() in ["true", "1"]

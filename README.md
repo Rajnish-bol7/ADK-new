@@ -1,179 +1,324 @@
-# Agent Development Kit (ADK)
+# ADK Flow Platform
 
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![PyPI](https://img.shields.io/pypi/v/google-adk)](https://pypi.org/project/google-adk/)
-[![Python Unit Tests](https://github.com/google/adk-python/actions/workflows/python-unit-tests.yml/badge.svg)](https://github.com/google/adk-python/actions/workflows/python-unit-tests.yml)
-[![r/agentdevelopmentkit](https://img.shields.io/badge/Reddit-r%2Fagentdevelopmentkit-FF4500?style=flat&logo=reddit&logoColor=white)](https://www.reddit.com/r/agentdevelopmentkit/)
-<a href="https://codewiki.google/github.com/google/adk-python"><img src="https://www.gstatic.com/_/boq-sdlc-agents-ui/_/r/Mvosg4klCA4.svg" alt="Ask Code Wiki" height="20"></a>
+A Django-based platform for building AI agents from visual flow definitions, powered by Google's Agent Development Kit (ADK).
 
-<html>
-    <h2 align="center">
-      <img src="https://raw.githubusercontent.com/google/adk-python/main/assets/agent-development-kit.png" width="256"/>
-    </h2>
-    <h3 align="center">
-      An open-source, code-first Python framework for building, evaluating, and deploying sophisticated AI agents with flexibility and control.
-    </h3>
-    <h3 align="center">
-      Important Links:
-      <a href="https://google.github.io/adk-docs/">Docs</a>,
-      <a href="https://github.com/google/adk-samples">Samples</a>,
-      <a href="https://github.com/google/adk-java">Java ADK</a>,
-      <a href="https://github.com/google/adk-go">Go ADK</a> &
-      <a href="https://github.com/google/adk-web">ADK Web</a>.
-    </h3>
-</html>
+## Features
 
-Agent Development Kit (ADK) is a flexible and modular framework that applies
-software development principles to AI agent creation. It is designed to
-simplify building, deploying, and orchestrating agent workflows, from simple
-tasks to complex systems. While optimized for Gemini, ADK is model-agnostic,
-deployment-agnostic, and compatible with other frameworks.
+- **Visual Flow Builder**: Create AI agent flows with a drag-and-drop interface
+- **Multi-Tenant**: Isolated data and API keys per tenant
+- **Multi-Model Support**: Gemini, GPT-4, Claude, and more
+- **Real-Time Chat**: Streaming responses via Server-Sent Events
+- **WebSocket Support**: Real-time text and voice streaming
+- **Background Execution**: Async flow execution with Celery
+- **Scheduled Flows**: Periodic/scheduled flow execution with Celery Beat
+- **Webhooks**: Trigger flows from external systems
+- **Session Management**: Persistent conversations across requests
 
----
+## Project Structure
 
-## 🔥 What's new
+```
+adk-python/
+├── config/                  # Django project settings
+│   ├── settings.py
+│   ├── urls.py
+│   ├── asgi.py              # WebSocket support
+│   ├── celery.py            # Celery configuration
+│   └── wsgi.py
+├── core/                    # Core app (users, tenants)
+│   ├── models.py            # User, Tenant, APIKey
+│   └── admin.py
+├── flows/                   # Flows app
+│   ├── models.py            # Flow, Session, Message
+│   ├── tasks.py             # Celery tasks
+│   └── admin.py
+├── api/                     # REST API
+│   ├── urls.py
+│   ├── views.py
+│   ├── consumers.py         # WebSocket consumers
+│   └── routing.py           # WebSocket routing
+├── adk_integration/         # ADK integration layer
+│   ├── schema/              # Flow JSON validation
+│   ├── builder/             # Agent building
+│   └── executor/            # Flow execution
+├── src/google/adk/          # Core ADK library
+├── manage.py
+├── requirements.txt
+└── .env
+```
 
-- **Custom Service Registration**: Add a service registry to provide a generic way to register custom service implementations to be used in FastAPI server. See [short instruction](https://github.com/google/adk-python/discussions/3175#discussioncomment-14745120). ([391628f](https://github.com/google/adk-python/commit/391628fcdc7b950c6835f64ae3ccab197163c990))
+## Quick Start
 
-- **Rewind**: Add the ability to rewind a session to before a previous invocation ([9dce06f](https://github.com/google/adk-python/commit/9dce06f9b00259ec42241df4f6638955e783a9d1)).
-
-- **New CodeExecutor**: Introduces a new AgentEngineSandboxCodeExecutor class that supports executing agent-generated code using the Vertex AI Code Execution Sandbox API ([ee39a89](https://github.com/google/adk-python/commit/ee39a891106316b790621795b5cc529e89815a98))
-
-## ✨ Key Features
-
-- **Rich Tool Ecosystem**: Utilize pre-built tools, custom functions,
-  OpenAPI specs, MCP tools or integrate existing tools to give agents diverse
-  capabilities, all for tight integration with the Google ecosystem.
-
-- **Code-First Development**: Define agent logic, tools, and orchestration
-  directly in Python for ultimate flexibility, testability, and versioning.
-
-- **Agent Config**: Build agents without code. Check out the
-  [Agent Config](https://google.github.io/adk-docs/agents/config/) feature.
-
-- **Tool Confirmation**: A [tool confirmation flow(HITL)](https://google.github.io/adk-docs/tools/confirmation/) that can guard tool execution with explicit confirmation and custom input.
-
-- **Modular Multi-Agent Systems**: Design scalable applications by composing
-  multiple specialized agents into flexible hierarchies.
-
-- **Deploy Anywhere**: Easily containerize and deploy agents on Cloud Run or
-  scale seamlessly with Vertex AI Agent Engine.
-
-## 🚀 Installation
-
-### Stable Release (Recommended)
-
-You can install the latest stable version of ADK using `pip`:
+### 1. Setup
 
 ```bash
-pip install google-adk
+# Activate virtual environment
+source venv/bin/activate
+
+# Run migrations
+python manage.py migrate
+
+# Credentials
+# Username: admin, Password: admin123
 ```
 
-The release cadence is roughly bi-weekly.
+### 2. Configure API Keys
 
-This version is recommended for most users as it represents the most recent official release.
+Edit `.env` and add your API keys:
 
-### Development Version
-Bug fixes and new features are merged into the main branch on GitHub first. If you need access to changes that haven't been included in an official PyPI release yet, you can install directly from the main branch:
+```env
+GOOGLE_API_KEY=your_google_api_key
+OPENAI_API_KEY=your_openai_api_key
+ANTHROPIC_API_KEY=your_anthropic_api_key
+```
+
+### 3. Run the Server
 
 ```bash
-pip install git+https://github.com/google/adk-python.git@main
+# Development server
+python manage.py runserver
+
+# With WebSocket support (recommended)
+daphne config.asgi:application -p 8000
 ```
 
-Note: The development version is built directly from the latest code commits. While it includes the newest fixes and features, it may also contain experimental changes or bugs not present in the stable release. Use it primarily for testing upcoming changes or accessing critical fixes before they are officially released.
-
-## 🤖 Agent2Agent (A2A) Protocol and ADK Integration
-
-For remote agent-to-agent communication, ADK integrates with the
-[A2A protocol](https://github.com/google-a2a/A2A/).
-See this [example](https://github.com/a2aproject/a2a-samples/tree/main/samples/python/agents)
-for how they can work together.
-
-## 📚 Documentation
-
-Explore the full documentation for detailed guides on building, evaluating, and
-deploying agents:
-
-* **[Documentation](https://google.github.io/adk-docs)**
-
-## 🏁 Feature Highlight
-
-### Define a single agent:
-
-```python
-from google.adk.agents import Agent
-from google.adk.tools import google_search
-
-root_agent = Agent(
-    name="search_assistant",
-    model="gemini-2.5-flash", # Or your preferred Gemini model
-    instruction="You are a helpful assistant. Answer user questions using Google Search when needed.",
-    description="An assistant that can search the web.",
-    tools=[google_search]
-)
-```
-
-### Define a multi-agent system:
-
-Define a multi-agent system with coordinator agent, greeter agent, and task execution agent. Then ADK engine and the model will guide the agents works together to accomplish the task.
-
-```python
-from google.adk.agents import LlmAgent, BaseAgent
-
-# Define individual agents
-greeter = LlmAgent(name="greeter", model="gemini-2.5-flash", ...)
-task_executor = LlmAgent(name="task_executor", model="gemini-2.5-flash", ...)
-
-# Create parent agent and assign children via sub_agents
-coordinator = LlmAgent(
-    name="Coordinator",
-    model="gemini-2.5-flash",
-    description="I coordinate greetings and tasks.",
-    sub_agents=[ # Assign sub_agents here
-        greeter,
-        task_executor
-    ]
-)
-```
-
-### Development UI
-
-A built-in development UI to help you test, evaluate, debug, and showcase your agent(s).
-
-<img src="https://raw.githubusercontent.com/google/adk-python/main/assets/adk-web-dev-ui-function-call.png"/>
-
-###  Evaluate Agents
+### 4. Start Celery (for background tasks)
 
 ```bash
-adk eval \
-    samples_for_testing/hello_world \
-    samples_for_testing/hello_world/hello_world_eval_set_001.evalset.json
+# Start Celery worker
+celery -A config worker -l info
+
+# Start Celery Beat (for scheduled tasks)
+celery -A config beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
 ```
 
-## 🤝 Contributing
+### 5. Access the Admin
 
-We welcome contributions from the community! Whether it's bug reports, feature requests, documentation improvements, or code contributions, please see our
-- [General contribution guideline and flow](https://google.github.io/adk-docs/contributing-guide/).
-- Then if you want to contribute code, please read [Code Contributing Guidelines](./CONTRIBUTING.md) to get started.
+Open http://localhost:8000/admin/
 
-## Community Repo
+- Username: `admin`
+- Password: `admin123`
 
-We have [adk-python-community repo](https://github.com/google/adk-python-community) that is home to a growing ecosystem of community-contributed tools, third-party
-service integrations, and deployment scripts that extend the core capabilities
-of the ADK.
+## API Endpoints
 
-## Vibe Coding
+### Authentication
 
-If you want to develop agent via vibe coding the [llms.txt](./llms.txt) and the [llms-full.txt](./llms-full.txt) can be used as context to LLM. While the former one is a summarized one and the later one has the full information in case your LLM has big enough context window.
+```
+POST /api/v1/auth/login/         # Login
+POST /api/v1/auth/logout/        # Logout
+GET  /api/v1/auth/me/            # Current user
+```
 
-## Community Events
+### Flows
 
-- [Completed] ADK's 1st community meeting on Wednesday, October 15, 2025. Remember to [join our group](https://groups.google.com/g/adk-community) to get access to the [recording](https://drive.google.com/file/d/1rpXDq5NSH8-MyMeYI6_5pZ3Lhn0X9BQf/view), and [deck](https://docs.google.com/presentation/d/1_b8LG4xaiadbUUDzyNiapSFyxanc9ZgFdw7JQ6zmZ9Q/edit?slide=id.g384e60cdaca_0_658&resourcekey=0-tjFFv0VBQhpXBPCkZr0NOg#slide=id.g384e60cdaca_0_658).
+```
+GET  /api/v1/flows/              # List flows
+POST /api/v1/flows/              # Create flow
+GET  /api/v1/flows/{id}/         # Get flow
+PUT  /api/v1/flows/{id}/         # Update flow
+DELETE /api/v1/flows/{id}/       # Delete flow
+```
 
-## 📄 License
+### Chat
 
-This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details.
+```
+POST /api/v1/flows/{id}/chat/           # Non-streaming chat
+POST /api/v1/flows/{id}/chat/stream/    # Streaming chat (SSE)
+```
 
----
+### Background Execution
 
-*Happy Agent Building!*
+```
+POST /api/v1/flows/{id}/run-async/      # Run flow in background
+POST /api/v1/flows/{id}/schedule/       # Create scheduled task
+```
+
+### Sessions
+
+```
+GET  /api/v1/flows/{id}/sessions/       # List sessions
+GET  /api/v1/sessions/{id}/             # Get session
+GET  /api/v1/sessions/{id}/messages/    # Get messages
+DELETE /api/v1/sessions/{id}/           # Delete session
+```
+
+### Webhooks
+
+```
+GET/POST /api/v1/webhooks/{path}/       # Trigger flow via webhook
+```
+
+## WebSocket Endpoints
+
+### Real-Time Chat
+
+```javascript
+// Connect
+const ws = new WebSocket('ws://localhost:8000/ws/chat/{flow_id}/');
+
+// Send message
+ws.send(JSON.stringify({
+    type: 'message',
+    content: 'Hello!',
+    session_id: 'optional-session-id'
+}));
+
+// Receive streaming response
+ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    if (data.type === 'text') {
+        console.log(data.content, data.is_final);
+    }
+};
+```
+
+### Voice Streaming
+
+```javascript
+// Connect
+const ws = new WebSocket('ws://localhost:8000/ws/voice/{flow_id}/');
+
+// Start streaming
+ws.send(JSON.stringify({ type: 'start' }));
+
+// Send audio (PCM 16-bit, 16kHz mono)
+ws.send(audioBuffer);
+
+// Receive audio response
+ws.onmessage = (event) => {
+    if (event.data instanceof Blob) {
+        // Play audio
+    }
+};
+```
+
+### Gemini Live Streaming
+
+```javascript
+// Connect
+const ws = new WebSocket('ws://localhost:8000/ws/live/{flow_id}/');
+
+// Start live session
+ws.send(JSON.stringify({ type: 'start_live' }));
+
+// Bidirectional audio streaming
+```
+
+## Background & Scheduled Execution
+
+### Run Flow in Background
+
+```bash
+curl -X POST http://localhost:8000/api/v1/flows/{id}/run-async/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Process this in background",
+    "callback_url": "https://your-webhook.com/result"
+  }'
+```
+
+### Create Scheduled Flow
+
+```bash
+# Run every hour
+curl -X POST http://localhost:8000/api/v1/flows/{id}/schedule/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Hourly Report",
+    "schedule_type": "interval",
+    "interval_minutes": 60,
+    "input_message": "Generate hourly report"
+  }'
+
+# Run daily at 9 AM
+curl -X POST http://localhost:8000/api/v1/flows/{id}/schedule/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Daily Report",
+    "schedule_type": "crontab",
+    "crontab": "0 9 * * *",
+    "input_message": "Generate daily report"
+  }'
+```
+
+## Flow JSON Format
+
+```json
+{
+  "nodes": [
+    {
+      "id": "agent_1",
+      "type": "agent",
+      "position": {"x": 100, "y": 100},
+      "data": {
+        "agentName": "my_agent",
+        "model": "gemini-2.5-flash",
+        "promptDescription": "You are a helpful assistant.",
+        "promptInstructions": "Be concise."
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "conn_1",
+      "source": "trigger_1",
+      "target": "agent_1"
+    }
+  ]
+}
+```
+
+## Supported Models
+
+| Provider | Models |
+|----------|--------|
+| Google | gemini-2.5-flash, gemini-2.5-pro, gemini-2.0-flash |
+| OpenAI | gpt-4, gpt-4-turbo, gpt-4o, gpt-3.5-turbo |
+| Anthropic | claude-3-opus, claude-3-sonnet, claude-3.5-sonnet |
+
+## Development
+
+### Run Test Script
+
+```bash
+python test_flow.py
+```
+
+### Test Background Tasks
+
+```bash
+# Make sure Celery worker is running
+celery -A config worker -l info
+
+# Then trigger a background task via API
+```
+
+## Production Deployment
+
+### Requirements
+
+- Redis (for Celery broker)
+- PostgreSQL (recommended for production)
+
+### Environment Variables
+
+```env
+DEBUG=False
+DJANGO_SECRET_KEY=your-secure-secret-key
+DATABASE_URL=postgres://user:pass@localhost/dbname
+CELERY_BROKER_URL=redis://localhost:6379/0
+REDIS_URL=redis://localhost:6379/0
+```
+
+### Run with Gunicorn + Daphne
+
+```bash
+# HTTP (gunicorn)
+gunicorn config.wsgi:application
+
+# WebSockets (daphne)
+daphne config.asgi:application -p 8001
+```
+
+## License
+
+Apache 2.0

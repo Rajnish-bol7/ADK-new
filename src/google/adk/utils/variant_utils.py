@@ -24,25 +24,25 @@ from enum import Enum
 
 from .env_utils import is_env_enabled
 
-_GOOGLE_LLM_VARIANT_VERTEX_AI = 'VERTEX_AI'
-_GOOGLE_LLM_VARIANT_GEMINI_API = 'GEMINI_API'
+_GOOGLE_LLM_VARIANT_VERTEX_AI = "VERTEX_AI"
+_GOOGLE_LLM_VARIANT_GEMINI_API = "GEMINI_API"
 
 
 class GoogleLLMVariant(Enum):
-  """
-  The Google LLM variant to use.
-  see https://google.github.io/adk-docs/get-started/quickstart/#set-up-the-model
-  """
+    """
+    The Google LLM variant to use.
+    see https://google.github.io/adk-docs/get-started/quickstart/#set-up-the-model
+    """
 
-  VERTEX_AI = _GOOGLE_LLM_VARIANT_VERTEX_AI
-  """For using credentials from Google Vertex AI"""
-  GEMINI_API = _GOOGLE_LLM_VARIANT_GEMINI_API
-  """For using API Key from Google AI Studio"""
+    VERTEX_AI = _GOOGLE_LLM_VARIANT_VERTEX_AI
+    """For using credentials from Google Vertex AI"""
+    GEMINI_API = _GOOGLE_LLM_VARIANT_GEMINI_API
+    """For using API Key from Google AI Studio"""
 
 
 def get_google_llm_variant() -> GoogleLLMVariant:
-  return (
-      GoogleLLMVariant.VERTEX_AI
-      if is_env_enabled('GOOGLE_GENAI_USE_VERTEXAI')
-      else GoogleLLMVariant.GEMINI_API
-  )
+    return (
+        GoogleLLMVariant.VERTEX_AI
+        if is_env_enabled("GOOGLE_GENAI_USE_VERTEXAI")
+        else GoogleLLMVariant.GEMINI_API
+    )

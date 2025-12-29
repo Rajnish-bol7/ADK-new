@@ -24,16 +24,16 @@ from .live_request_queue import LiveRequestQueue
 
 
 class ActiveStreamingTool(BaseModel):
-  """Manages streaming tool related resources during invocation."""
+    """Manages streaming tool related resources during invocation."""
 
-  model_config = ConfigDict(
-      arbitrary_types_allowed=True,
-      extra='forbid',
-  )
-  """The pydantic model config."""
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        extra="forbid",
+    )
+    """The pydantic model config."""
 
-  task: Optional[asyncio.Task] = None
-  """The active task of this streaming tool."""
+    task: Optional[asyncio.Task] = None
+    """The active task of this streaming tool."""
 
-  stream: Optional[LiveRequestQueue] = None
-  """The active (input) streams of this streaming tool."""
+    stream: Optional[LiveRequestQueue] = None
+    """The active (input) streams of this streaming tool."""

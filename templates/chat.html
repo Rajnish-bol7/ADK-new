@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADK Flow Tester</title>
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --wa-green: #00a884;
+            --wa-green-dark: #008069;
+            --wa-green-light: #d9fdd3;
+            --wa-bg: #0b141a;
+            --wa-panel-bg: #111b21;
+            --wa-chat-bg: #0b141a;
+            --wa-incoming: #202c33;
+            --wa-outgoing: #005c4b;
+            --wa-text: #e9edef;
+            --wa-text-secondary: #8696a0;
+            --wa-border: #222d34;
+            --wa-hover: #2a3942;
+            --call-green: #00a884;
+            --call-red: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--wa-bg);
+            color: var(--wa-text);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 420px;
+            background: var(--wa-panel-bg);
+            border-right: 1px solid var(--wa-border);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 16px 20px;
+            background: var(--wa-panel-bg);
+            border-bottom: 1px solid var(--wa-border);
+        }
+
+        .sidebar-header h1 {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--wa-text);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sidebar-header h1 .logo {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--wa-green), var(--wa-green-dark));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        /* Selection Panel */
+        .selection-panel {
+            padding: 16px;
+            border-bottom: 1px solid var(--wa-border);
+        }
+
+        .select-group {
+            margin-bottom: 16px;
+        }
+
+        .select-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .select-group label {
+            display: block;
+            font-size: 12px;
+            color: var(--wa-text-secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .select-group select {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--wa-hover);
+            border: 1px solid var(--wa-border);
+            border-radius: 8px;
+            color: var(--wa-text);
+            font-size: 14px;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238696a0' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+        }
+
+        .select-group select:focus {
+            outline: none;
+            border-color: var(--wa-green);
+        }
+
+        .select-group select option {
+            background: var(--wa-panel-bg);
+            color: var(--wa-text);
+        }
+
+        /* Flow Info Card */
+        .flow-info {
+            padding: 16px;
+            background: var(--wa-hover);
+            margin: 16px;
+            border-radius: 12px;
+        }
+
+        .flow-info h3 {
+            font-size: 14px;
+            color: var(--wa-text);
+            margin-bottom: 8px;
+        }
+
+        .flow-info p {
+            font-size: 12px;
+            color: var(--wa-text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .flow-info .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 8px;
+            font-size: 12px;
+        }
+
+        .flow-info .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--wa-green);
+        }
+
+        .flow-info .status-dot.offline {
+            background: var(--wa-text-secondary);
+        }
+
+        /* Mode Toggle */
+        .mode-toggle {
+            display: flex;
+            padding: 16px;
+            gap: 8px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .mode-btn.chat-mode {
+            background: var(--wa-hover);
+            color: var(--wa-text);
+        }
+
+        .mode-btn.call-mode {
+            background: var(--wa-hover);
+            color: var(--wa-text);
+        }
+
+        .mode-btn.active {
+            background: var(--wa-green);
+            color: white;
+        }
+
+        .mode-btn:hover:not(.active) {
+            background: var(--wa-border);
+        }
+
+        /* Chat Panel */
+        .chat-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--wa-chat-bg);
+        }
+
+        .chat-header {
+            padding: 12px 20px;
+            background: var(--wa-panel-bg);
+            border-bottom: 1px solid var(--wa-border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .chat-header .avatar {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .chat-header .info {
+            flex: 1;
+        }
+
+        .chat-header .info h2 {
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .chat-header .info p {
+            font-size: 13px;
+            color: var(--wa-text-secondary);
+        }
+
+        .chat-header .actions {
+            display: flex;
+            gap: 16px;
+        }
+
+        .chat-header .action-btn {
+            width: 40px;
+            height: 40px;
+            background: none;
+            border: none;
+            border-radius: 50%;
+            color: var(--wa-text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            transition: all 0.2s;
+        }
+
+        .chat-header .action-btn:hover {
+            background: var(--wa-hover);
+            color: var(--wa-text);
+        }
+
+        /* Messages Area */
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.02'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+
+        .message {
+            max-width: 65%;
+            margin-bottom: 12px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message.incoming {
+            align-items: flex-start;
+        }
+
+        .message.outgoing {
+            align-items: flex-end;
+            margin-left: auto;
+        }
+
+        .message .bubble {
+            padding: 10px 14px;
+            border-radius: 8px;
+            position: relative;
+            word-wrap: break-word;
+        }
+
+        .message.incoming .bubble {
+            background: var(--wa-incoming);
+            border-top-left-radius: 0;
+        }
+
+        .message.outgoing .bubble {
+            background: var(--wa-outgoing);
+            border-top-right-radius: 0;
+        }
+
+        .message .bubble p {
+            font-size: 14.5px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+
+        .message .meta {
+            font-size: 11px;
+            color: var(--wa-text-secondary);
+            margin-top: 4px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .message.outgoing .meta {
+            justify-content: flex-end;
+        }
+
+        .message .meta .check {
+            color: #53bdeb;
+        }
+
+        /* Typing Indicator */
+        .typing-indicator {
+            display: none;
+            padding: 10px 14px;
+            background: var(--wa-incoming);
+            border-radius: 8px;
+            border-top-left-radius: 0;
+            width: fit-content;
+        }
+
+        .typing-indicator.show {
+            display: block;
+        }
+
+        .typing-indicator .dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .typing-indicator .dot {
+            width: 8px;
+            height: 8px;
+            background: var(--wa-text-secondary);
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-indicator .dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-indicator .dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+            30% { opacity: 1; transform: translateY(-4px); }
+        }
+
+        /* Input Area */
+        .input-area {
+            padding: 12px 20px;
+            background: var(--wa-panel-bg);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .input-area .emoji-btn {
+            width: 40px;
+            height: 40px;
+            background: none;
+            border: none;
+            color: var(--wa-text-secondary);
+            cursor: pointer;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+
+        .input-area .emoji-btn:hover {
+            background: var(--wa-hover);
+        }
+
+        .input-area .message-input {
+            flex: 1;
+            padding: 12px 16px;
+            background: var(--wa-hover);
+            border: none;
+            border-radius: 8px;
+            color: var(--wa-text);
+            font-size: 15px;
+            outline: none;
+            resize: none;
+            max-height: 100px;
+            font-family: inherit;
+        }
+
+        .input-area .message-input::placeholder {
+            color: var(--wa-text-secondary);
+        }
+
+        .input-area .send-btn {
+            width: 48px;
+            height: 48px;
+            background: var(--wa-green);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            transition: all 0.2s;
+        }
+
+        .input-area .send-btn:hover {
+            background: var(--wa-green-dark);
+            transform: scale(1.05);
+        }
+
+        .input-area .send-btn:disabled {
+            background: var(--wa-text-secondary);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Call Screen */
+        .call-screen {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(180deg, #1a2e35 0%, #0b141a 100%);
+            text-align: center;
+        }
+
+        .call-screen.active {
+            display: flex;
+        }
+
+        .call-avatar {
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            margin-bottom: 24px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+            50% { box-shadow: 0 0 0 20px rgba(99, 102, 241, 0); }
+        }
+
+        .call-screen h2 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .call-screen .call-status {
+            color: var(--wa-text-secondary);
+            font-size: 14px;
+            margin-bottom: 48px;
+        }
+
+        .call-screen .call-timer {
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--wa-green);
+            margin-bottom: 48px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .call-controls {
+            display: flex;
+            gap: 24px;
+        }
+
+        .call-btn {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            transition: all 0.2s;
+        }
+
+        .call-btn.mute {
+            background: var(--wa-hover);
+            color: var(--wa-text);
+        }
+
+        .call-btn.end-call {
+            background: var(--call-red);
+            color: white;
+        }
+
+        .call-btn.start-call {
+            background: var(--call-green);
+            color: white;
+        }
+
+        .call-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .call-btn.muted {
+            background: var(--call-red);
+        }
+
+        /* Connection Status */
+        .connection-status {
+            padding: 8px 16px;
+            background: var(--wa-hover);
+            border-bottom: 1px solid var(--wa-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--wa-text-secondary);
+        }
+
+        .connection-status.connected {
+            background: rgba(0, 168, 132, 0.1);
+            color: var(--wa-green);
+        }
+
+        .connection-status.error {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--call-red);
+        }
+
+        .connection-status.connecting {
+            background: rgba(251, 191, 36, 0.1);
+            color: #fbbf24;
+        }
+
+        .connection-status.connecting .dot {
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .connection-status .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--wa-border);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--wa-text-secondary);
+        }
+
+        /* Empty State */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--wa-text-secondary);
+            text-align: center;
+            padding: 40px;
+        }
+
+        .empty-state .icon {
+            font-size: 80px;
+            margin-bottom: 24px;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            font-size: 20px;
+            color: var(--wa-text);
+            margin-bottom: 8px;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+            max-width: 300px;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .sidebar {
+                width: 100%;
+                position: absolute;
+                z-index: 10;
+                transform: translateX(-100%);
+                transition: transform 0.3s;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h1>
+                    <span class="logo">🤖</span>
+                    ADK Flow Tester
+                </h1>
+            </div>
+
+            <div class="selection-panel">
+                <div class="select-group">
+                    <label>Select Tenant</label>
+                    <select id="tenantSelect">
+                        <option value="">Loading tenants...</option>
+                    </select>
+                </div>
+                <div class="select-group">
+                    <label>Select Flow</label>
+                    <select id="flowSelect" disabled>
+                        <option value="">Select a tenant first</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flow-info" id="flowInfo" style="display: none;">
+                <h3 id="flowName">Flow Name</h3>
+                <p id="flowDescription">Description</p>
+                <p id="flowModel">Model: gemini-2.5-flash</p>
+                <div class="status">
+                    <span class="status-dot" id="statusDot"></span>
+                    <span id="statusText">Ready</span>
+                </div>
+            </div>
+
+            <div class="mode-toggle">
+                <button class="mode-btn chat-mode active" id="chatModeBtn" onclick="switchMode('chat')">
+                    💬 Chat
+                </button>
+                <button class="mode-btn call-mode" id="callModeBtn" onclick="switchMode('call')">
+                    📞 Call
+                </button>
+            </div>
+
+            <div style="flex: 1;"></div>
+
+            <div style="padding: 16px; border-top: 1px solid var(--wa-border);">
+                <p style="font-size: 12px; color: var(--wa-text-secondary); text-align: center;">
+                    Powered by Google ADK
+                </p>
+            </div>
+        </div>
+
+        <!-- Chat Panel -->
+        <div class="chat-panel" id="chatPanel">
+            <div class="connection-status" id="connectionStatus">
+                <span class="dot"></span>
+                <span>Connecting...</span>
+            </div>
+
+            <div class="chat-header">
+                <div class="avatar" id="chatAvatar">🤖</div>
+                <div class="info">
+                    <h2 id="chatTitle">Select a Flow</h2>
+                    <p id="chatSubtitle">Choose a tenant and flow to start</p>
+                </div>
+                <div class="actions">
+                    <button class="action-btn" id="headerCallBtn" onclick="switchMode('call')" title="Start Call">📞</button>
+                    <button class="action-btn" onclick="clearChat()" title="Clear Chat">🗑️</button>
+                </div>
+            </div>
+
+            <div class="messages-container" id="messagesContainer">
+                <div class="empty-state" id="emptyState">
+                    <div class="icon">💬</div>
+                    <h3>No messages yet</h3>
+                    <p>Select a flow and start chatting to test your AI agent</p>
+                </div>
+            </div>
+
+            <div class="typing-indicator" id="typingIndicator">
+                <div class="dots">
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                </div>
+            </div>
+
+            <div class="input-area">
+                <button class="emoji-btn">😊</button>
+                <textarea 
+                    class="message-input" 
+                    id="messageInput" 
+                    placeholder="Type a message" 
+                    rows="1"
+                    disabled
+                ></textarea>
+                <button class="send-btn" id="sendBtn" onclick="sendMessage()" disabled>
+                    ➤
+                </button>
+            </div>
+        </div>
+
+        <!-- Call Screen -->
+        <div class="call-screen" id="callScreen">
+            <div class="call-avatar" id="callAvatar">🤖</div>
+            <h2 id="callName">AI Assistant</h2>
+            <p class="call-status" id="callStatus">Tap to start voice call</p>
+            <p class="call-timer" id="callTimer" style="display: none;">00:00</p>
+
+            <div class="call-controls">
+                <button class="call-btn mute" id="muteBtn" onclick="toggleMute()" style="display: none;">
+                    🎤
+                </button>
+                <button class="call-btn start-call" id="startCallBtn" onclick="startCall()">
+                    📞
+                </button>
+                <button class="call-btn end-call" id="endCallBtn" onclick="endCall()" style="display: none;">
+                    📵
+                </button>
+            </div>
+
+            <p style="margin-top: 48px; color: var(--wa-text-secondary); font-size: 13px;">
+                🎙️ Voice calls use Gemini Live
+            </p>
+            <p style="margin-top: 8px; color: var(--wa-text-secondary); font-size: 11px; opacity: 0.7;">
+                Requires: daphne config.asgi:application
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let currentTenant = null;
+        let currentFlow = null;
+        let currentMode = 'chat';
+        let ws = null;
+        let sessionId = null;
+        let isCallActive = false;
+        let isMuted = false;
+        let callStartTime = null;
+        let callTimerInterval = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTenants();
+            setupMessageInput();
+        });
+
+        // Load tenants from API
+        async function loadTenants() {
+            try {
+                // For demo, we'll use the admin API or create mock data
+                const response = await fetch('/api/v1/tenants/', {
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    populateTenants(data.tenants || []);
+                } else {
+                    // Fallback: Load from flows endpoint
+                    loadFlowsDirectly();
+                }
+            } catch (error) {
+                console.log('Loading flows directly...');
+                loadFlowsDirectly();
+            }
+        }
+
+        // Load flows directly if tenants API not available
+        async function loadFlowsDirectly() {
+            try {
+                const response = await fetch('/api/v1/flows/', {
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const flows = data.flows || [];
+                    
+                    // Extract unique tenants from flows
+                    const tenants = [...new Set(flows.map(f => f.tenant_id || 'default'))];
+                    
+                    const tenantSelect = document.getElementById('tenantSelect');
+                    tenantSelect.innerHTML = '<option value="all">All Tenants</option>';
+                    
+                    document.getElementById('flowSelect').disabled = false;
+                    populateFlows(flows);
+                } else {
+                    showError('Failed to load flows. Please login first.');
+                }
+            } catch (error) {
+                showError('Cannot connect to server. Is it running?');
+            }
+        }
+
+        function populateTenants(tenants) {
+            const select = document.getElementById('tenantSelect');
+            select.innerHTML = '<option value="">Select a tenant</option>';
+            
+            tenants.forEach(tenant => {
+                const option = document.createElement('option');
+                option.value = tenant.id;
+                option.textContent = tenant.name;
+                select.appendChild(option);
+            });
+
+            select.addEventListener('change', (e) => {
+                currentTenant = e.target.value;
+                if (currentTenant) {
+                    loadFlows(currentTenant);
+                }
+            });
+        }
+
+        async function loadFlows(tenantId) {
+            const flowSelect = document.getElementById('flowSelect');
+            flowSelect.disabled = true;
+            flowSelect.innerHTML = '<option value="">Loading flows...</option>';
+
+            try {
+                const url = tenantId && tenantId !== 'all' 
+                    ? `/api/v1/flows/?tenant_id=${tenantId}`
+                    : '/api/v1/flows/';
+                    
+                const response = await fetch(url, {
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    populateFlows(data.flows || []);
+                }
+            } catch (error) {
+                flowSelect.innerHTML = '<option value="">Error loading flows</option>';
+            }
+        }
+
+        function populateFlows(flows) {
+            const select = document.getElementById('flowSelect');
+            select.innerHTML = '<option value="">Select a flow</option>';
+            select.disabled = false;
+
+            flows.forEach(flow => {
+                const option = document.createElement('option');
+                option.value = flow.id;
+                option.textContent = `${flow.name} (${flow.trigger_type || 'chat'})`;
+                option.dataset.flow = JSON.stringify(flow);
+                select.appendChild(option);
+            });
+
+            select.addEventListener('change', (e) => {
+                const option = e.target.selectedOptions[0];
+                if (option && option.dataset.flow) {
+                    selectFlow(JSON.parse(option.dataset.flow));
+                }
+            });
+        }
+
+        function selectFlow(flow) {
+            currentFlow = flow;
+            sessionId = `session_${Date.now()}`;
+
+            // Check chat/call capabilities
+            // Chat is ALWAYS enabled (default)
+            // Call is only enabled if flow has call_start trigger
+            const chatEnabled = flow.chat_enabled !== false;  // Always true by default
+            const callEnabled = flow.call_enabled === true;   // Only if explicitly enabled
+
+            // Update UI
+            document.getElementById('flowInfo').style.display = 'block';
+            document.getElementById('flowName').textContent = flow.name;
+            document.getElementById('flowDescription').textContent = flow.description || 'No description';
+            document.getElementById('flowModel').textContent = `Model: ${flow.flow_json?.nodes?.find(n => n.type === 'agent')?.data?.model || 'gemini-2.5-flash'}`;
+            
+            document.getElementById('chatTitle').textContent = flow.name;
+            document.getElementById('chatSubtitle').textContent = flow.description || 'AI Assistant';
+            document.getElementById('callName').textContent = flow.name;
+
+            // Show/hide call button based on flow capabilities
+            const callModeBtn = document.getElementById('callModeBtn');
+            const headerCallBtn = document.getElementById('headerCallBtn');
+            
+            if (callEnabled) {
+                callModeBtn.style.display = 'flex';
+                if (headerCallBtn) headerCallBtn.style.display = 'flex';
+            } else {
+                callModeBtn.style.display = 'none';
+                if (headerCallBtn) headerCallBtn.style.display = 'none';
+                // If currently in call mode, switch to chat
+                if (currentMode === 'call') {
+                    switchMode('chat');
+                }
+            }
+
+            // Keep input disabled until WebSocket connects
+            document.getElementById('messageInput').disabled = true;
+            document.getElementById('sendBtn').disabled = true;
+
+            // Reset empty state
+            document.getElementById('emptyState').innerHTML = `
+                <div class="icon">💬</div>
+                <h3>No messages yet</h3>
+                <p>Select a flow and start chatting to test your AI agent</p>
+            `;
+
+            // Connect WebSocket (required for chat)
+            connectWebSocket();
+        }
+
+        function connectWebSocket() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws/chat/${currentFlow.id}/`;
+
+            updateConnectionStatus('connecting', 'Connecting...');
+
+            try {
+                ws = new WebSocket(wsUrl);
+
+                ws.onopen = () => {
+                    console.log('WebSocket connected');
+                    updateConnectionStatus('connected', 'Connected');
+                    document.getElementById('messageInput').disabled = false;
+                    document.getElementById('sendBtn').disabled = false;
+                };
+
+                ws.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    handleWebSocketMessage(data);
+                };
+
+                ws.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    ws = null;
+                    updateConnectionStatus('error', 'Connection Failed');
+                    document.getElementById('messageInput').disabled = true;
+                    document.getElementById('sendBtn').disabled = true;
+                    showConnectionError();
+                };
+
+                ws.onclose = () => {
+                    console.log('WebSocket closed');
+                    ws = null;
+                    updateConnectionStatus('error', 'Disconnected');
+                    document.getElementById('messageInput').disabled = true;
+                    document.getElementById('sendBtn').disabled = true;
+                };
+            } catch (error) {
+                console.error('WebSocket connection failed:', error);
+                ws = null;
+                updateConnectionStatus('error', 'Connection Failed');
+                document.getElementById('messageInput').disabled = true;
+                document.getElementById('sendBtn').disabled = true;
+                showConnectionError();
+            }
+        }
+
+        function showConnectionError() {
+            const emptyState = document.getElementById('emptyState');
+            if (emptyState) {
+                emptyState.innerHTML = `
+                    <div class="icon">⚠️</div>
+                    <h3>WebSocket Connection Failed</h3>
+                    <p>Make sure Daphne server is running:</p>
+                    <p style="font-family: monospace; background: var(--wa-hover); padding: 10px; border-radius: 8px; margin-top: 10px;">
+                        daphne -p 8000 config.asgi:application
+                    </p>
+                    <button onclick="location.reload()" style="margin-top: 16px; padding: 10px 20px; background: var(--wa-green); border: none; border-radius: 8px; color: white; cursor: pointer;">
+                        Retry Connection
+                    </button>
+                `;
+                emptyState.style.display = 'block';
+            }
+        }
+
+        function handleWebSocketMessage(data) {
+            hideTypingIndicator();
+
+            if (data.type === 'connected') {
+                console.log('Flow connected:', data.flow_name);
+            } else if (data.type === 'text') {
+                if (data.is_final) {
+                    addMessage(data.content, 'incoming');
+                }
+            } else if (data.type === 'ack') {
+                showTypingIndicator();
+            } else if (data.type === 'error') {
+                addMessage(`Error: ${data.message}`, 'incoming');
+            }
+        }
+
+        function setupMessageInput() {
+            const input = document.getElementById('messageInput');
+            
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            input.addEventListener('input', () => {
+                input.style.height = 'auto';
+                input.style.height = Math.min(input.scrollHeight, 100) + 'px';
+            });
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+
+            if (!message || !currentFlow) return;
+
+            // Check WebSocket connection
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                addMessage('Error: WebSocket not connected. Please refresh the page.', 'incoming');
+                return;
+            }
+
+            // Add user message to chat
+            addMessage(message, 'outgoing');
+            input.value = '';
+            input.style.height = 'auto';
+
+            // Hide empty state
+            document.getElementById('emptyState').style.display = 'none';
+
+            // Send via WebSocket only
+            ws.send(JSON.stringify({
+                type: 'message',
+                content: message,
+                session_id: sessionId
+            }));
+            showTypingIndicator();
+        }
+
+        function addMessage(content, type) {
+            const container = document.getElementById('messagesContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+
+            const now = new Date();
+            const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            messageDiv.innerHTML = `
+                <div class="bubble">
+                    <p>${escapeHtml(content)}</p>
+                </div>
+                <div class="meta">
+                    ${time}
+                    ${type === 'outgoing' ? '<span class="check">✓✓</span>' : ''}
+                </div>
+            `;
+
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showTypingIndicator() {
+            document.getElementById('typingIndicator').classList.add('show');
+            const container = document.getElementById('messagesContainer');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function hideTypingIndicator() {
+            document.getElementById('typingIndicator').classList.remove('show');
+        }
+
+        function clearChat() {
+            const container = document.getElementById('messagesContainer');
+            container.innerHTML = `
+                <div class="empty-state" id="emptyState">
+                    <div class="icon">💬</div>
+                    <h3>No messages yet</h3>
+                    <p>Select a flow and start chatting to test your AI agent</p>
+                </div>
+            `;
+            sessionId = `session_${Date.now()}`;
+        }
+
+        function switchMode(mode) {
+            currentMode = mode;
+
+            document.getElementById('chatModeBtn').classList.toggle('active', mode === 'chat');
+            document.getElementById('callModeBtn').classList.toggle('active', mode === 'call');
+
+            document.getElementById('chatPanel').style.display = mode === 'chat' ? 'flex' : 'none';
+            document.getElementById('callScreen').classList.toggle('active', mode === 'call');
+        }
+
+        function updateConnectionStatus(status, text) {
+            const statusEl = document.getElementById('connectionStatus');
+            statusEl.className = `connection-status ${status}`;
+            statusEl.innerHTML = `<span class="dot"></span><span>${text}</span>`;
+
+            const flowStatus = document.getElementById('statusDot');
+            const flowStatusText = document.getElementById('statusText');
+            
+            if (flowStatus) {
+                flowStatus.className = `status-dot ${status === 'connected' ? '' : 'offline'}`;
+            }
+            if (flowStatusText) {
+                flowStatusText.textContent = text;
+            }
+        }
+
+        // Call Functions
+        function startCall() {
+            if (!currentFlow) {
+                alert('Please select a flow first');
+                return;
+            }
+
+            // Check if WebSocket is available (required for voice calls)
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws/voice/${currentFlow.id}/`;
+            
+            const voiceWs = new WebSocket(wsUrl);
+            
+            voiceWs.onopen = () => {
+                console.log('Voice WebSocket connected');
+                isCallActive = true;
+                callStartTime = Date.now();
+
+                document.getElementById('startCallBtn').style.display = 'none';
+                document.getElementById('endCallBtn').style.display = 'flex';
+                document.getElementById('muteBtn').style.display = 'flex';
+                document.getElementById('callTimer').style.display = 'block';
+                document.getElementById('callStatus').textContent = 'Connected';
+
+                // Start timer
+                callTimerInterval = setInterval(updateCallTimer, 1000);
+                
+                // Store the voice WebSocket
+                window.voiceWs = voiceWs;
+                
+                // TODO: Start audio capture and send to WebSocket
+                startAudioCapture();
+            };
+            
+            voiceWs.onerror = (error) => {
+                console.error('Voice WebSocket error:', error);
+                document.getElementById('callStatus').textContent = 'Voice calls require ASGI server';
+                document.getElementById('callStatus').style.color = '#ef4444';
+                
+                setTimeout(() => {
+                    document.getElementById('callStatus').textContent = 'Run: daphne config.asgi:application';
+                    document.getElementById('callStatus').style.color = '';
+                }, 2000);
+                
+                setTimeout(() => {
+                    document.getElementById('callStatus').textContent = 'Tap to start voice call';
+                    document.getElementById('callStatus').style.color = '';
+                }, 5000);
+            };
+            
+            voiceWs.onclose = () => {
+                if (isCallActive) {
+                    endCall();
+                }
+            };
+        }
+        
+        async function startAudioCapture() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+                
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0 && window.voiceWs && window.voiceWs.readyState === WebSocket.OPEN && !isMuted) {
+                        window.voiceWs.send(event.data);
+                    }
+                };
+                
+                mediaRecorder.start(100); // Send chunks every 100ms
+                window.mediaRecorder = mediaRecorder;
+                window.audioStream = stream;
+                
+                console.log('Audio capture started');
+            } catch (error) {
+                console.error('Failed to capture audio:', error);
+                document.getElementById('callStatus').textContent = 'Microphone access denied';
+            }
+        }
+        
+        function stopAudioCapture() {
+            if (window.mediaRecorder) {
+                window.mediaRecorder.stop();
+                window.mediaRecorder = null;
+            }
+            if (window.audioStream) {
+                window.audioStream.getTracks().forEach(track => track.stop());
+                window.audioStream = null;
+            }
+            if (window.voiceWs) {
+                window.voiceWs.close();
+                window.voiceWs = null;
+            }
+        }
+
+        function endCall() {
+            isCallActive = false;
+            
+            clearInterval(callTimerInterval);
+            stopAudioCapture();
+            
+            document.getElementById('startCallBtn').style.display = 'flex';
+            document.getElementById('endCallBtn').style.display = 'none';
+            document.getElementById('muteBtn').style.display = 'none';
+            document.getElementById('callTimer').style.display = 'none';
+            document.getElementById('callStatus').textContent = 'Call ended';
+
+            setTimeout(() => {
+                document.getElementById('callStatus').textContent = 'Tap to start voice call';
+            }, 2000);
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            const muteBtn = document.getElementById('muteBtn');
+            muteBtn.classList.toggle('muted', isMuted);
+            muteBtn.textContent = isMuted ? '🔇' : '🎤';
+        }
+
+        function updateCallTimer() {
+            const elapsed = Math.floor((Date.now() - callStartTime) / 1000);
+            const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
+            const seconds = (elapsed % 60).toString().padStart(2, '0');
+            document.getElementById('callTimer').textContent = `${minutes}:${seconds}`;
+        }
+
+        function showError(message) {
+            updateConnectionStatus('error', message);
+            document.getElementById('emptyState').innerHTML = `
+                <div class="icon">⚠️</div>
+                <h3>Connection Error</h3>
+                <p>${message}</p>
+            `;
+        }
+    </script>
+</body>
+</html>
+

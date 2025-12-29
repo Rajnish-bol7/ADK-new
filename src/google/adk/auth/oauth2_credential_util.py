@@ -35,83 +35,83 @@ def create_oauth2_session(
     auth_scheme: AuthScheme,
     auth_credential: AuthCredential,
 ) -> Tuple[Optional[OAuth2Session], Optional[str]]:
-  """Create an OAuth2 session for token operations.
+    """Create an OAuth2 session for token operations.
 
-  Args:
-      auth_scheme: The authentication scheme configuration.
-      auth_credential: The authentication credential.
+    Args:
+        auth_scheme: The authentication scheme configuration.
+        auth_credential: The authentication credential.
 
-  Returns:
-      Tuple of (OAuth2Session, token_endpoint) or (None, None) if cannot create session.
-  """
-  if isinstance(auth_scheme, OpenIdConnectWithConfig):
-    if not hasattr(auth_scheme, "token_endpoint"):
-      logger.warning("OpenIdConnect scheme missing token_endpoint")
-      return None, None
-    token_endpoint = auth_scheme.token_endpoint
-    scopes = auth_scheme.scopes or []
-  elif isinstance(auth_scheme, OAuth2):
-    # Support both authorization code and client credentials flows
-    if (
-        auth_scheme.flows.authorizationCode
-        and auth_scheme.flows.authorizationCode.tokenUrl
-    ):
-      token_endpoint = auth_scheme.flows.authorizationCode.tokenUrl
-      scopes = list(auth_scheme.flows.authorizationCode.scopes.keys())
-    elif (
-        auth_scheme.flows.clientCredentials
-        and auth_scheme.flows.clientCredentials.tokenUrl
-    ):
-      token_endpoint = auth_scheme.flows.clientCredentials.tokenUrl
-      scopes = list(auth_scheme.flows.clientCredentials.scopes.keys())
+    Returns:
+        Tuple of (OAuth2Session, token_endpoint) or (None, None) if cannot create session.
+    """
+    if isinstance(auth_scheme, OpenIdConnectWithConfig):
+        if not hasattr(auth_scheme, "token_endpoint"):
+            logger.warning("OpenIdConnect scheme missing token_endpoint")
+            return None, None
+        token_endpoint = auth_scheme.token_endpoint
+        scopes = auth_scheme.scopes or []
+    elif isinstance(auth_scheme, OAuth2):
+        # Support both authorization code and client credentials flows
+        if (
+            auth_scheme.flows.authorizationCode
+            and auth_scheme.flows.authorizationCode.tokenUrl
+        ):
+            token_endpoint = auth_scheme.flows.authorizationCode.tokenUrl
+            scopes = list(auth_scheme.flows.authorizationCode.scopes.keys())
+        elif (
+            auth_scheme.flows.clientCredentials
+            and auth_scheme.flows.clientCredentials.tokenUrl
+        ):
+            token_endpoint = auth_scheme.flows.clientCredentials.tokenUrl
+            scopes = list(auth_scheme.flows.clientCredentials.scopes.keys())
+        else:
+            logger.warning(
+                "OAuth2 scheme missing required flow configuration. Expected either"
+                " authorizationCode.tokenUrl or clientCredentials.tokenUrl. Auth"
+                " scheme: %s",
+                auth_scheme,
+            )
+            return None, None
     else:
-      logger.warning(
-          "OAuth2 scheme missing required flow configuration. Expected either"
-          " authorizationCode.tokenUrl or clientCredentials.tokenUrl. Auth"
-          " scheme: %s",
-          auth_scheme,
-      )
-      return None, None
-  else:
-    logger.warning(f"Unsupported auth_scheme type: {type(auth_scheme)}")
-    return None, None
+        logger.warning(f"Unsupported auth_scheme type: {type(auth_scheme)}")
+        return None, None
 
-  if (
-      not auth_credential
-      or not auth_credential.oauth2
-      or not auth_credential.oauth2.client_id
-      or not auth_credential.oauth2.client_secret
-  ):
-    return None, None
+    if (
+        not auth_credential
+        or not auth_credential.oauth2
+        or not auth_credential.oauth2.client_id
+        or not auth_credential.oauth2.client_secret
+    ):
+        return None, None
 
-  return (
-      OAuth2Session(
-          auth_credential.oauth2.client_id,
-          auth_credential.oauth2.client_secret,
-          scope=" ".join(scopes),
-          redirect_uri=auth_credential.oauth2.redirect_uri,
-          state=auth_credential.oauth2.state,
-          token_endpoint_auth_method=auth_credential.oauth2.token_endpoint_auth_method,
-      ),
-      token_endpoint,
-  )
+    return (
+        OAuth2Session(
+            auth_credential.oauth2.client_id,
+            auth_credential.oauth2.client_secret,
+            scope=" ".join(scopes),
+            redirect_uri=auth_credential.oauth2.redirect_uri,
+            state=auth_credential.oauth2.state,
+            token_endpoint_auth_method=auth_credential.oauth2.token_endpoint_auth_method,
+        ),
+        token_endpoint,
+    )
 
 
 @experimental
 def update_credential_with_tokens(
     auth_credential: AuthCredential, tokens: OAuth2Token
 ) -> None:
-  """Update the credential with new tokens.
+    """Update the credential with new tokens.
 
-  Args:
-      auth_credential: The authentication credential to update.
-      tokens: The OAuth2Token object containing new token information.
-  """
-  auth_credential.oauth2.access_token = tokens.get("access_token")
-  auth_credential.oauth2.refresh_token = tokens.get("refresh_token")
-  auth_credential.oauth2.expires_at = (
-      int(tokens.get("expires_at")) if tokens.get("expires_at") else None
-  )
-  auth_credential.oauth2.expires_in = (
-      int(tokens.get("expires_in")) if tokens.get("expires_in") else None
-  )
+    Args:
+        auth_credential: The authentication credential to update.
+        tokens: The OAuth2Token object containing new token information.
+    """
+    auth_credential.oauth2.access_token = tokens.get("access_token")
+    auth_credential.oauth2.refresh_token = tokens.get("refresh_token")
+    auth_credential.oauth2.expires_at = (
+        int(tokens.get("expires_at")) if tokens.get("expires_at") else None
+    )
+    auth_credential.oauth2.expires_in = (
+        int(tokens.get("expires_in")) if tokens.get("expires_in") else None
+    )

@@ -25,104 +25,106 @@ from ..utils.feature_decorator import experimental
 
 @experimental
 class BaseToolConfig(BaseModel):
-  """The base class for all tool configs."""
+    """The base class for all tool configs."""
 
-  model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid")
 
 
 @experimental
 class ToolArgsConfig(BaseModel):
-  """Config to host free key-value pairs for the args in ToolConfig."""
+    """Config to host free key-value pairs for the args in ToolConfig."""
 
-  model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="allow")
 
 
 @experimental
 class ToolConfig(BaseModel):
-  """The configuration for a tool.
+    """The configuration for a tool.
 
-  The config supports these types of tools:
-  1. ADK built-in tools
-  2. User-defined tool instances
-  3. User-defined tool classes
-  4. User-defined functions that generate tool instances
-  5. User-defined function tools
+    The config supports these types of tools:
+    1. ADK built-in tools
+    2. User-defined tool instances
+    3. User-defined tool classes
+    4. User-defined functions that generate tool instances
+    5. User-defined function tools
 
-  For examples:
+    For examples:
 
-    1. For ADK built-in tool instances or classes in `google.adk.tools` package,
-    they can be referenced directly with the `name` and optionally with
-    `args`.
+      1. For ADK built-in tool instances or classes in `google.adk.tools` package,
+      they can be referenced directly with the `name` and optionally with
+      `args`.
 
-    ```
-    tools:
-      - name: google_search
-      - name: AgentTool
-        args:
-          agent: ./another_agent.yaml
-          skip_summarization: true
-    ```
+      ```
+      tools:
+        - name: google_search
+        - name: AgentTool
+          args:
+            agent: ./another_agent.yaml
+            skip_summarization: true
+      ```
 
-    2. For user-defined tool instances, the `name` is the fully qualified path
-    to the tool instance.
+      2. For user-defined tool instances, the `name` is the fully qualified path
+      to the tool instance.
 
-    ```
-    tools:
-      - name: my_package.my_module.my_tool
-    ```
+      ```
+      tools:
+        - name: my_package.my_module.my_tool
+      ```
 
-    3. For user-defined tool classes (custom tools), the `name` is the fully
-    qualified path to the tool class and `args` is the arguments for the tool.
+      3. For user-defined tool classes (custom tools), the `name` is the fully
+      qualified path to the tool class and `args` is the arguments for the tool.
 
-    ```
-    tools:
-      - name: my_package.my_module.my_tool_class
-        args:
-          my_tool_arg1: value1
-          my_tool_arg2: value2
-    ```
+      ```
+      tools:
+        - name: my_package.my_module.my_tool_class
+          args:
+            my_tool_arg1: value1
+            my_tool_arg2: value2
+      ```
 
-    4. For user-defined functions that generate tool instances, the `name` is
-    the fully qualified path to the function and `args` is passed to the
-    function as arguments.
+      4. For user-defined functions that generate tool instances, the `name` is
+      the fully qualified path to the function and `args` is passed to the
+      function as arguments.
 
-    ```
-    tools:
-      - name: my_package.my_module.my_tool_function
-        args:
-          my_function_arg1: value1
-          my_function_arg2: value2
-    ```
+      ```
+      tools:
+        - name: my_package.my_module.my_tool_function
+          args:
+            my_function_arg1: value1
+            my_function_arg2: value2
+      ```
 
-    The function must have the following signature:
-    ```
-    def my_function(args: ToolArgsConfig) -> BaseTool:
-      ...
-    ```
+      The function must have the following signature:
+      ```
+      def my_function(args: ToolArgsConfig) -> BaseTool:
+        ...
+      ```
 
-    5. For user-defined function tools, the `name` is the fully qualified path
-    to the function.
+      5. For user-defined function tools, the `name` is the fully qualified path
+      to the function.
 
-    ```
-    tools:
-      - name: my_package.my_module.my_function_tool
-    ```
+      ```
+      tools:
+        - name: my_package.my_module.my_function_tool
+      ```
 
-    If the above use cases don't suffice, users can define a custom tool config
-    by extending BaseToolConfig and override from_config() in the custom tool.
-  """
+      If the above use cases don't suffice, users can define a custom tool config
+      by extending BaseToolConfig and override from_config() in the custom tool.
+    """
 
-  model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid")
 
-  name: str = Field(description="""\
+    name: str = Field(
+        description="""\
 The name of the tool.
 
 For ADK built-in tools, `name` is the name of the tool, e.g. `google_search`
 or `AgentTool`.
 
 For user-defined tools, the name is the fully qualified path to the tool, e.g.
-`my_package.my_module.my_tool`.""")
+`my_package.my_module.my_tool`."""
+    )
 
-  args: Optional[ToolArgsConfig] = Field(
-      default=None, description="The args for the tool."
-  )
+    args: Optional[ToolArgsConfig] = Field(
+        default=None, description="The args for the tool."
+    )

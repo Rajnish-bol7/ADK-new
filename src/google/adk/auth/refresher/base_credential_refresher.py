@@ -25,50 +25,50 @@ from google.adk.utils.feature_decorator import experimental
 
 
 class CredentialRefresherError(Exception):
-  """Base exception for credential refresh errors."""
+    """Base exception for credential refresh errors."""
 
 
 @experimental
 class BaseCredentialRefresher(abc.ABC):
-  """Base interface for credential refreshers.
+    """Base interface for credential refreshers.
 
-  Credential refreshers are responsible for checking if a credential is expired
-  or needs to be refreshed, and for refreshing it if necessary.
-  """
-
-  @abc.abstractmethod
-  async def is_refresh_needed(
-      self,
-      auth_credential: AuthCredential,
-      auth_scheme: Optional[AuthScheme] = None,
-  ) -> bool:
-    """Checks if a credential needs to be refreshed.
-
-    Args:
-        auth_credential: The credential to check.
-        auth_scheme: The authentication scheme (optional, some refreshers don't need it).
-
-    Returns:
-        True if the credential needs to be refreshed, False otherwise.
+    Credential refreshers are responsible for checking if a credential is expired
+    or needs to be refreshed, and for refreshing it if necessary.
     """
-    pass
 
-  @abc.abstractmethod
-  async def refresh(
-      self,
-      auth_credential: AuthCredential,
-      auth_scheme: Optional[AuthScheme] = None,
-  ) -> AuthCredential:
-    """Refreshes a credential if needed.
+    @abc.abstractmethod
+    async def is_refresh_needed(
+        self,
+        auth_credential: AuthCredential,
+        auth_scheme: Optional[AuthScheme] = None,
+    ) -> bool:
+        """Checks if a credential needs to be refreshed.
 
-    Args:
-        auth_credential: The credential to refresh.
-        auth_scheme: The authentication scheme (optional, some refreshers don't need it).
+        Args:
+            auth_credential: The credential to check.
+            auth_scheme: The authentication scheme (optional, some refreshers don't need it).
 
-    Returns:
-        The refreshed credential.
+        Returns:
+            True if the credential needs to be refreshed, False otherwise.
+        """
+        pass
 
-    Raises:
-        CredentialRefresherError: If credential refresh fails.
-    """
-    pass
+    @abc.abstractmethod
+    async def refresh(
+        self,
+        auth_credential: AuthCredential,
+        auth_scheme: Optional[AuthScheme] = None,
+    ) -> AuthCredential:
+        """Refreshes a credential if needed.
+
+        Args:
+            auth_credential: The credential to refresh.
+            auth_scheme: The authentication scheme (optional, some refreshers don't need it).
+
+        Returns:
+            The refreshed credential.
+
+        Raises:
+            CredentialRefresherError: If credential refresh fails.
+        """
+        pass

@@ -39,18 +39,18 @@ _ADK_AGENT_CLASSES: set[str] = {
 
 
 def agent_config_discriminator(v: Any) -> str:
-  """Discriminator function that returns the tag name for Pydantic."""
-  if isinstance(v, dict):
-    agent_class: str = v.get("agent_class", "LlmAgent")
+    """Discriminator function that returns the tag name for Pydantic."""
+    if isinstance(v, dict):
+        agent_class: str = v.get("agent_class", "LlmAgent")
 
-    # Look up the agent_class in our dynamically built mapping
-    if agent_class in _ADK_AGENT_CLASSES:
-      return agent_class
+        # Look up the agent_class in our dynamically built mapping
+        if agent_class in _ADK_AGENT_CLASSES:
+            return agent_class
 
-    # For non ADK agent classes, use BaseAgent to handle it.
-    return "BaseAgent"
+        # For non ADK agent classes, use BaseAgent to handle it.
+        return "BaseAgent"
 
-  raise ValueError(f"Invalid agent config: {v}")
+    raise ValueError(f"Invalid agent config: {v}")
 
 
 # A discriminated union of all possible agent configurations.
@@ -70,4 +70,4 @@ ConfigsUnion = Annotated[
 # The `discriminator` is applied to the union within the RootModel.
 @experimental
 class AgentConfig(RootModel[ConfigsUnion]):
-  """The config for the YAML schema to create an agent."""
+    """The config for the YAML schema to create an agent."""

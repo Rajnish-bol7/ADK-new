@@ -25,15 +25,13 @@ from .base_agent_config import BaseAgentConfig
 
 @experimental
 class ParallelAgentConfig(BaseAgentConfig):
-  """The config for the YAML schema of a ParallelAgent."""
+    """The config for the YAML schema of a ParallelAgent."""
 
-  model_config = ConfigDict(
-      extra="forbid",
-  )
+    model_config = ConfigDict(
+        extra="forbid",
+    )
 
-  agent_class: str = Field(
-      default="ParallelAgent",
-      description=(
-          "The value is used to uniquely identify the ParallelAgent class."
-      ),
-  )
+    agent_class: str = Field(
+        default="ParallelAgent",
+        description=("The value is used to uniquely identify the ParallelAgent class."),
+    )

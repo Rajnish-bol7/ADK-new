@@ -27,21 +27,21 @@ from ._base_llm_processor import BaseLlmRequestProcessor
 
 
 class _IdentityLlmRequestProcessor(BaseLlmRequestProcessor):
-  """Gives the agent identity from the framework."""
+    """Gives the agent identity from the framework."""
 
-  @override
-  async def run_async(
-      self, invocation_context: InvocationContext, llm_request: LlmRequest
-  ) -> AsyncGenerator[Event, None]:
-    agent = invocation_context.agent
-    si = f'You are an agent. Your internal name is "{agent.name}".'
-    if agent.description:
-      si += f' The description about you is "{agent.description}".'
-    llm_request.append_instructions([si])
+    @override
+    async def run_async(
+        self, invocation_context: InvocationContext, llm_request: LlmRequest
+    ) -> AsyncGenerator[Event, None]:
+        agent = invocation_context.agent
+        si = f'You are an agent. Your internal name is "{agent.name}".'
+        if agent.description:
+            si += f' The description about you is "{agent.description}".'
+        llm_request.append_instructions([si])
 
-    # Maintain async generator behavior
-    if False:  # Ensures it behaves as a generator
-      yield  # This is a no-op but maintains generator structure
+        # Maintain async generator behavior
+        if False:  # Ensures it behaves as a generator
+            yield  # This is a no-op but maintains generator structure
 
 
 request_processor = _IdentityLlmRequestProcessor()

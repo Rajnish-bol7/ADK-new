@@ -31,42 +31,42 @@ from . import request_confirmation
 from ...auth import auth_preprocessor
 from .base_llm_flow import BaseLlmFlow
 
-logger = logging.getLogger('google_adk.' + __name__)
+logger = logging.getLogger("google_adk." + __name__)
 
 
 class SingleFlow(BaseLlmFlow):
-  """SingleFlow is the LLM flows that handles tools calls.
+    """SingleFlow is the LLM flows that handles tools calls.
 
-  A single flow only consider an agent itself and tools.
-  No sub-agents are allowed for single flow.
-  """
+    A single flow only consider an agent itself and tools.
+    No sub-agents are allowed for single flow.
+    """
 
-  def __init__(self):
-    super().__init__()
-    self.request_processors += [
-        basic.request_processor,
-        auth_preprocessor.request_processor,
-        request_confirmation.request_processor,
-        instructions.request_processor,
-        identity.request_processor,
-        contents.request_processor,
-        # Context cache processor sets up cache config and finds existing cache metadata
-        context_cache_processor.request_processor,
-        # Interactions processor extracts previous_interaction_id for stateful
-        # conversations via the Interactions API
-        interactions_processor.request_processor,
-        # Some implementations of NL Planning mark planning contents as thoughts
-        # in the post processor. Since these need to be unmarked, NL Planning
-        # should be after contents.
-        _nl_planning.request_processor,
-        # Code execution should be after the contents as it mutates the contents
-        # to optimize data files.
-        _code_execution.request_processor,
-        # Output schema processor add system instruction and set_model_response
-        # when both output_schema and tools are present.
-        _output_schema_processor.request_processor,
-    ]
-    self.response_processors += [
-        _nl_planning.response_processor,
-        _code_execution.response_processor,
-    ]
+    def __init__(self):
+        super().__init__()
+        self.request_processors += [
+            basic.request_processor,
+            auth_preprocessor.request_processor,
+            request_confirmation.request_processor,
+            instructions.request_processor,
+            identity.request_processor,
+            contents.request_processor,
+            # Context cache processor sets up cache config and finds existing cache metadata
+            context_cache_processor.request_processor,
+            # Interactions processor extracts previous_interaction_id for stateful
+            # conversations via the Interactions API
+            interactions_processor.request_processor,
+            # Some implementations of NL Planning mark planning contents as thoughts
+            # in the post processor. Since these need to be unmarked, NL Planning
+            # should be after contents.
+            _nl_planning.request_processor,
+            # Code execution should be after the contents as it mutates the contents
+            # to optimize data files.
+            _code_execution.request_processor,
+            # Output schema processor add system instruction and set_model_response
+            # when both output_schema and tools are present.
+            _output_schema_processor.request_processor,
+        ]
+        self.response_processors += [
+            _nl_planning.response_processor,
+            _code_execution.response_processor,
+        ]

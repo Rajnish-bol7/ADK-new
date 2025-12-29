@@ -24,24 +24,22 @@ from ..utils.feature_decorator import experimental
 
 @experimental
 class BaseEventsSummarizer(abc.ABC):
-  """Base interface for compacting events."""
+    """Base interface for compacting events."""
 
-  @abc.abstractmethod
-  async def maybe_summarize_events(
-      self, *, events: list[Event]
-  ) -> Optional[Event]:
-    """Compact a list of events into a single event.
+    @abc.abstractmethod
+    async def maybe_summarize_events(self, *, events: list[Event]) -> Optional[Event]:
+        """Compact a list of events into a single event.
 
-    If compaction failed, return None. Otherwise, compact into a content and
-    return it.
+        If compaction failed, return None. Otherwise, compact into a content and
+        return it.
 
-    This method will summarize the events and return a new summary event
-    indicating the range of events it summarized.
+        This method will summarize the events and return a new summary event
+        indicating the range of events it summarized.
 
-    Args:
-      events: Events to compact.
+        Args:
+          events: Events to compact.
 
-    Returns:
-      The new compacted event, or None if no compaction happened.
-    """
-    raise NotImplementedError()
+        Returns:
+          The new compacted event, or None if no compaction happened.
+        """
+        raise NotImplementedError()

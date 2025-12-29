@@ -16,13 +16,13 @@ from __future__ import annotations
 
 
 class NotFoundError(Exception):
-  """Represents an error that occurs when an entity is not found."""
+    """Represents an error that occurs when an entity is not found."""
 
-  def __init__(self, message="The requested item was not found."):
-    """Initializes the NotFoundError exception.
+    def __init__(self, message="The requested item was not found."):
+        """Initializes the NotFoundError exception.
 
-    Args:
-        message (str): An optional custom message to describe the error.
-    """
-    self.message = message
-    super().__init__(self.message)
+        Args:
+            message (str): An optional custom message to describe the error.
+        """
+        self.message = message
+        super().__init__(self.message)

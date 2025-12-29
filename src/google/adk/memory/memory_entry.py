@@ -24,22 +24,22 @@ from pydantic import Field
 
 
 class MemoryEntry(BaseModel):
-  """Represent one memory entry."""
+    """Represent one memory entry."""
 
-  content: types.Content
-  """The main content of the memory."""
+    content: types.Content
+    """The main content of the memory."""
 
-  custom_metadata: dict[str, Any] = Field(default_factory=dict)
-  """Optional custom metadata associated with the memory."""
+    custom_metadata: dict[str, Any] = Field(default_factory=dict)
+    """Optional custom metadata associated with the memory."""
 
-  id: Optional[str] = None
-  """The unique identifier of the memory."""
+    id: Optional[str] = None
+    """The unique identifier of the memory."""
 
-  author: Optional[str] = None
-  """The author of the memory."""
+    author: Optional[str] = None
+    """The author of the memory."""
 
-  timestamp: Optional[str] = None
-  """The timestamp when the original content of this memory happened.
+    timestamp: Optional[str] = None
+    """The timestamp when the original content of this memory happened.
 
   This string will be forwarded to LLM. Preferred format is ISO 8601 format.
   """

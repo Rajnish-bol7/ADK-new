@@ -20,15 +20,15 @@ from pydantic import ConfigDict
 from ...utils.feature_decorator import experimental
 
 
-@experimental('Config defaults may have breaking change in the future.')
+@experimental("Config defaults may have breaking change in the future.")
 class PubSubToolConfig(BaseModel):
-  """Configuration for Pub/Sub tools."""
+    """Configuration for Pub/Sub tools."""
 
-  # Forbid any fields not defined in the model
-  model_config = ConfigDict(extra='forbid')
+    # Forbid any fields not defined in the model
+    model_config = ConfigDict(extra="forbid")
 
-  project_id: str | None = None
-  """GCP project ID to use for the Pub/Sub operations.
+    project_id: str | None = None
+    """GCP project ID to use for the Pub/Sub operations.
 
   If not set, the project ID will be inferred from the environment or
   credentials.

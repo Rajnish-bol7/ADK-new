@@ -32,95 +32,99 @@ from typing_extensions import override
 from .base_credential_refresher import BaseCredentialRefresher
 
 try:
-  from authlib.oauth2.rfc6749 import OAuth2Token
+    from authlib.oauth2.rfc6749 import OAuth2Token
 
-  AUTHLIB_AVAILABLE = True
+    AUTHLIB_AVAILABLE = True
 except ImportError:
-  AUTHLIB_AVAILABLE = False
+    AUTHLIB_AVAILABLE = False
 
 logger = logging.getLogger("google_adk." + __name__)
 
 
 @experimental
 class OAuth2CredentialRefresher(BaseCredentialRefresher):
-  """Refreshes OAuth2 credentials including Google OAuth2 JSON credentials."""
+    """Refreshes OAuth2 credentials including Google OAuth2 JSON credentials."""
 
-  @override
-  async def is_refresh_needed(
-      self,
-      auth_credential: AuthCredential,
-      auth_scheme: Optional[AuthScheme] = None,
-  ) -> bool:
-    """Check if the OAuth2 credential needs to be refreshed.
+    @override
+    async def is_refresh_needed(
+        self,
+        auth_credential: AuthCredential,
+        auth_scheme: Optional[AuthScheme] = None,
+    ) -> bool:
+        """Check if the OAuth2 credential needs to be refreshed.
 
-    Args:
-        auth_credential: The OAuth2 credential to check.
-        auth_scheme: The OAuth2 authentication scheme (optional for Google OAuth2 JSON).
+        Args:
+            auth_credential: The OAuth2 credential to check.
+            auth_scheme: The OAuth2 authentication scheme (optional for Google OAuth2 JSON).
 
-    Returns:
-        True if the credential needs to be refreshed, False otherwise.
-    """
+        Returns:
+            True if the credential needs to be refreshed, False otherwise.
+        """
 
-    # Handle regular OAuth2 credentials
-    if auth_credential.oauth2:
-      if not AUTHLIB_AVAILABLE:
+        # Handle regular OAuth2 credentials
+        if auth_credential.oauth2:
+            if not AUTHLIB_AVAILABLE:
+                return False
+
+            return OAuth2Token(
+                {
+                    "expires_at": auth_credential.oauth2.expires_at,
+                    "expires_in": auth_credential.oauth2.expires_in,
+                }
+            ).is_expired()
+
         return False
 
-      return OAuth2Token({
-          "expires_at": auth_credential.oauth2.expires_at,
-          "expires_in": auth_credential.oauth2.expires_in,
-      }).is_expired()
+    @override
+    async def refresh(
+        self,
+        auth_credential: AuthCredential,
+        auth_scheme: Optional[AuthScheme] = None,
+    ) -> AuthCredential:
+        """Refresh the OAuth2 credential.
+        If refresh failed, return the original credential.
 
-    return False
+        Args:
+            auth_credential: The OAuth2 credential to refresh.
+            auth_scheme: The OAuth2 authentication scheme (optional for Google OAuth2 JSON).
 
-  @override
-  async def refresh(
-      self,
-      auth_credential: AuthCredential,
-      auth_scheme: Optional[AuthScheme] = None,
-  ) -> AuthCredential:
-    """Refresh the OAuth2 credential.
-    If refresh failed, return the original credential.
+        Returns:
+            The refreshed credential.
 
-    Args:
-        auth_credential: The OAuth2 credential to refresh.
-        auth_scheme: The OAuth2 authentication scheme (optional for Google OAuth2 JSON).
+        """
 
-    Returns:
-        The refreshed credential.
+        # Handle regular OAuth2 credentials
+        if auth_credential.oauth2 and auth_scheme:
+            if not AUTHLIB_AVAILABLE:
+                return auth_credential
 
-    """
+            if not auth_credential.oauth2:
+                return auth_credential
 
-    # Handle regular OAuth2 credentials
-    if auth_credential.oauth2 and auth_scheme:
-      if not AUTHLIB_AVAILABLE:
+            if OAuth2Token(
+                {
+                    "expires_at": auth_credential.oauth2.expires_at,
+                    "expires_in": auth_credential.oauth2.expires_in,
+                }
+            ).is_expired():
+                client, token_endpoint = create_oauth2_session(
+                    auth_scheme, auth_credential
+                )
+                if not client:
+                    logger.warning("Could not create OAuth2 session for token refresh")
+                    return auth_credential
+
+                try:
+                    tokens = client.refresh_token(
+                        url=token_endpoint,
+                        refresh_token=auth_credential.oauth2.refresh_token,
+                    )
+                    update_credential_with_tokens(auth_credential, tokens)
+                    logger.debug("Successfully refreshed OAuth2 tokens")
+                except Exception as e:
+                    # TODO reconsider whether we should raise error when refresh failed.
+                    logger.error("Failed to refresh OAuth2 tokens: %s", e)
+                    # Return original credential on failure
+                    return auth_credential
+
         return auth_credential
-
-      if not auth_credential.oauth2:
-        return auth_credential
-
-      if OAuth2Token({
-          "expires_at": auth_credential.oauth2.expires_at,
-          "expires_in": auth_credential.oauth2.expires_in,
-      }).is_expired():
-        client, token_endpoint = create_oauth2_session(
-            auth_scheme, auth_credential
-        )
-        if not client:
-          logger.warning("Could not create OAuth2 session for token refresh")
-          return auth_credential
-
-        try:
-          tokens = client.refresh_token(
-              url=token_endpoint,
-              refresh_token=auth_credential.oauth2.refresh_token,
-          )
-          update_credential_with_tokens(auth_credential, tokens)
-          logger.debug("Successfully refreshed OAuth2 tokens")
-        except Exception as e:
-          # TODO reconsider whether we should raise error when refresh failed.
-          logger.error("Failed to refresh OAuth2 tokens: %s", e)
-          # Return original credential on failure
-          return auth_credential
-
-    return auth_credential

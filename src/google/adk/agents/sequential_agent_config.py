@@ -25,15 +25,15 @@ from ..agents.base_agent_config import BaseAgentConfig
 
 @experimental
 class SequentialAgentConfig(BaseAgentConfig):
-  """The config for the YAML schema of a SequentialAgent."""
+    """The config for the YAML schema of a SequentialAgent."""
 
-  model_config = ConfigDict(
-      extra="forbid",
-  )
+    model_config = ConfigDict(
+        extra="forbid",
+    )
 
-  agent_class: str = Field(
-      default="SequentialAgent",
-      description=(
-          "The value is used to uniquely identify the SequentialAgent class."
-      ),
-  )
+    agent_class: str = Field(
+        default="SequentialAgent",
+        description=(
+            "The value is used to uniquely identify the SequentialAgent class."
+        ),
+    )

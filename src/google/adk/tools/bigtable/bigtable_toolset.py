@@ -36,69 +36,65 @@ DEFAULT_BIGTABLE_TOOL_NAME_PREFIX = "bigtable"
 
 @experimental
 class BigtableToolset(BaseToolset):
-  """Bigtable Toolset contains tools for interacting with Bigtable data and metadata.
+    """Bigtable Toolset contains tools for interacting with Bigtable data and metadata.
 
-  The tool names are:
-    - bigtable_list_instances
-    - bigtable_get_instance_info
-    - bigtable_list_tables
-    - bigtable_get_table_info
-    - bigtable_execute_sql
-  """
+    The tool names are:
+      - bigtable_list_instances
+      - bigtable_get_instance_info
+      - bigtable_list_tables
+      - bigtable_get_table_info
+      - bigtable_execute_sql
+    """
 
-  def __init__(
-      self,
-      *,
-      tool_filter: Optional[Union[ToolPredicate, List[str]]] = None,
-      credentials_config: Optional[BigtableCredentialsConfig] = None,
-      bigtable_tool_settings: Optional[BigtableToolSettings] = None,
-  ):
-    super().__init__(
-        tool_filter=tool_filter,
-        tool_name_prefix=DEFAULT_BIGTABLE_TOOL_NAME_PREFIX,
-    )
-    self._credentials_config = credentials_config
-    self._tool_settings = (
-        bigtable_tool_settings
-        if bigtable_tool_settings
-        else BigtableToolSettings()
-    )
-
-  def _is_tool_selected(
-      self, tool: BaseTool, readonly_context: ReadonlyContext
-  ) -> bool:
-    if self.tool_filter is None:
-      return True
-
-    if isinstance(self.tool_filter, ToolPredicate):
-      return self.tool_filter(tool, readonly_context)
-
-    if isinstance(self.tool_filter, list):
-      return tool.name in self.tool_filter
-
-    return False
-
-  @override
-  async def get_tools(
-      self, readonly_context: Optional[ReadonlyContext] = None
-  ) -> List[BaseTool]:
-    """Get tools from the toolset."""
-    all_tools = [
-        GoogleTool(
-            func=func,
-            credentials_config=self._credentials_config,
-            tool_settings=self._tool_settings,
+    def __init__(
+        self,
+        *,
+        tool_filter: Optional[Union[ToolPredicate, List[str]]] = None,
+        credentials_config: Optional[BigtableCredentialsConfig] = None,
+        bigtable_tool_settings: Optional[BigtableToolSettings] = None,
+    ):
+        super().__init__(
+            tool_filter=tool_filter,
+            tool_name_prefix=DEFAULT_BIGTABLE_TOOL_NAME_PREFIX,
         )
-        for func in [
-            metadata_tool.list_instances,
-            metadata_tool.get_instance_info,
-            metadata_tool.list_tables,
-            metadata_tool.get_table_info,
-            query_tool.execute_sql,
+        self._credentials_config = credentials_config
+        self._tool_settings = (
+            bigtable_tool_settings if bigtable_tool_settings else BigtableToolSettings()
+        )
+
+    def _is_tool_selected(
+        self, tool: BaseTool, readonly_context: ReadonlyContext
+    ) -> bool:
+        if self.tool_filter is None:
+            return True
+
+        if isinstance(self.tool_filter, ToolPredicate):
+            return self.tool_filter(tool, readonly_context)
+
+        if isinstance(self.tool_filter, list):
+            return tool.name in self.tool_filter
+
+        return False
+
+    @override
+    async def get_tools(
+        self, readonly_context: Optional[ReadonlyContext] = None
+    ) -> List[BaseTool]:
+        """Get tools from the toolset."""
+        all_tools = [
+            GoogleTool(
+                func=func,
+                credentials_config=self._credentials_config,
+                tool_settings=self._tool_settings,
+            )
+            for func in [
+                metadata_tool.list_instances,
+                metadata_tool.get_instance_info,
+                metadata_tool.list_tables,
+                metadata_tool.get_table_info,
+                query_tool.execute_sql,
+            ]
         ]
-    ]
-    return [
-        tool
-        for tool in all_tools
-        if self._is_tool_selected(tool, readonly_context)
-    ]
+        return [
+            tool for tool in all_tools if self._is_tool_selected(tool, readonly_context)
+        ]

@@ -20,18 +20,18 @@ from ..base_tool import BaseTool
 
 class BaseRetrievalTool(BaseTool):
 
-  @override
-  def _get_declaration(self) -> types.FunctionDeclaration:
-    return types.FunctionDeclaration(
-        name=self.name,
-        description=self.description,
-        parameters=types.Schema(
-            type=types.Type.OBJECT,
-            properties={
-                'query': types.Schema(
-                    type=types.Type.STRING,
-                    description='The query to retrieve.',
-                ),
-            },
-        ),
-    )
+    @override
+    def _get_declaration(self) -> types.FunctionDeclaration:
+        return types.FunctionDeclaration(
+            name=self.name,
+            description=self.description,
+            parameters=types.Schema(
+                type=types.Type.OBJECT,
+                properties={
+                    "query": types.Schema(
+                        type=types.Type.STRING,
+                        description="The query to retrieve.",
+                    ),
+                },
+            ),
+        )

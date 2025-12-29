@@ -28,58 +28,58 @@ from .base_code_executor import BaseCodeExecutor
 from .code_execution_utils import CodeExecutionInput
 from .code_execution_utils import CodeExecutionResult
 
-logger = logging.getLogger('google_adk.' + __name__)
+logger = logging.getLogger("google_adk." + __name__)
 
 
 def _prepare_globals(code: str, globals_: dict[str, Any]) -> None:
-  """Prepare globals for code execution, injecting __name__ if needed."""
-  if re.search(r"if\s+__name__\s*==\s*['\"]__main__['\"]", code):
-    globals_['__name__'] = '__main__'
+    """Prepare globals for code execution, injecting __name__ if needed."""
+    if re.search(r"if\s+__name__\s*==\s*['\"]__main__['\"]", code):
+        globals_["__name__"] = "__main__"
 
 
 class UnsafeLocalCodeExecutor(BaseCodeExecutor):
-  """A code executor that unsafely execute code in the current local context."""
+    """A code executor that unsafely execute code in the current local context."""
 
-  # Overrides the BaseCodeExecutor attribute: this executor cannot be stateful.
-  stateful: bool = Field(default=False, frozen=True, exclude=True)
+    # Overrides the BaseCodeExecutor attribute: this executor cannot be stateful.
+    stateful: bool = Field(default=False, frozen=True, exclude=True)
 
-  # Overrides the BaseCodeExecutor attribute: this executor cannot
-  # optimize_data_file.
-  optimize_data_file: bool = Field(default=False, frozen=True, exclude=True)
+    # Overrides the BaseCodeExecutor attribute: this executor cannot
+    # optimize_data_file.
+    optimize_data_file: bool = Field(default=False, frozen=True, exclude=True)
 
-  def __init__(self, **data):
-    """Initializes the UnsafeLocalCodeExecutor."""
-    if 'stateful' in data and data['stateful']:
-      raise ValueError('Cannot set `stateful=True` in UnsafeLocalCodeExecutor.')
-    if 'optimize_data_file' in data and data['optimize_data_file']:
-      raise ValueError(
-          'Cannot set `optimize_data_file=True` in UnsafeLocalCodeExecutor.'
-      )
-    super().__init__(**data)
+    def __init__(self, **data):
+        """Initializes the UnsafeLocalCodeExecutor."""
+        if "stateful" in data and data["stateful"]:
+            raise ValueError("Cannot set `stateful=True` in UnsafeLocalCodeExecutor.")
+        if "optimize_data_file" in data and data["optimize_data_file"]:
+            raise ValueError(
+                "Cannot set `optimize_data_file=True` in UnsafeLocalCodeExecutor."
+            )
+        super().__init__(**data)
 
-  @override
-  def execute_code(
-      self,
-      invocation_context: InvocationContext,
-      code_execution_input: CodeExecutionInput,
-  ) -> CodeExecutionResult:
-    logger.debug('Executing code:\n```\n%s\n```', code_execution_input.code)
-    # Execute the code.
-    output = ''
-    error = ''
-    try:
-      globals_ = {}
-      _prepare_globals(code_execution_input.code, globals_)
-      stdout = io.StringIO()
-      with redirect_stdout(stdout):
-        exec(code_execution_input.code, globals_, globals_)
-      output = stdout.getvalue()
-    except Exception as e:
-      error = str(e)
+    @override
+    def execute_code(
+        self,
+        invocation_context: InvocationContext,
+        code_execution_input: CodeExecutionInput,
+    ) -> CodeExecutionResult:
+        logger.debug("Executing code:\n```\n%s\n```", code_execution_input.code)
+        # Execute the code.
+        output = ""
+        error = ""
+        try:
+            globals_ = {}
+            _prepare_globals(code_execution_input.code, globals_)
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                exec(code_execution_input.code, globals_, globals_)
+            output = stdout.getvalue()
+        except Exception as e:
+            error = str(e)
 
-    # Collect the final result.
-    return CodeExecutionResult(
-        stdout=output,
-        stderr=error,
-        output_files=[],
-    )
+        # Collect the final result.
+        return CodeExecutionResult(
+            stdout=output,
+            stderr=error,
+            output_files=[],
+        )

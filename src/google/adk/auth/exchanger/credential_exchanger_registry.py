@@ -26,33 +26,33 @@ from .base_credential_exchanger import BaseCredentialExchanger
 
 @experimental
 class CredentialExchangerRegistry:
-  """Registry for credential exchanger instances."""
+    """Registry for credential exchanger instances."""
 
-  def __init__(self):
-    self._exchangers: Dict[AuthCredentialTypes, BaseCredentialExchanger] = {}
+    def __init__(self):
+        self._exchangers: Dict[AuthCredentialTypes, BaseCredentialExchanger] = {}
 
-  def register(
-      self,
-      credential_type: AuthCredentialTypes,
-      exchanger_instance: BaseCredentialExchanger,
-  ) -> None:
-    """Register an exchanger instance for a credential type.
+    def register(
+        self,
+        credential_type: AuthCredentialTypes,
+        exchanger_instance: BaseCredentialExchanger,
+    ) -> None:
+        """Register an exchanger instance for a credential type.
 
-    Args:
-        credential_type: The credential type to register for.
-        exchanger_instance: The exchanger instance to register.
-    """
-    self._exchangers[credential_type] = exchanger_instance
+        Args:
+            credential_type: The credential type to register for.
+            exchanger_instance: The exchanger instance to register.
+        """
+        self._exchangers[credential_type] = exchanger_instance
 
-  def get_exchanger(
-      self, credential_type: AuthCredentialTypes
-  ) -> Optional[BaseCredentialExchanger]:
-    """Get the exchanger instance for a credential type.
+    def get_exchanger(
+        self, credential_type: AuthCredentialTypes
+    ) -> Optional[BaseCredentialExchanger]:
+        """Get the exchanger instance for a credential type.
 
-    Args:
-        credential_type: The credential type to get exchanger for.
+        Args:
+            credential_type: The credential type to get exchanger for.
 
-    Returns:
-        The exchanger instance if registered, None otherwise.
-    """
-    return self._exchangers.get(credential_type)
+        Returns:
+            The exchanger instance if registered, None otherwise.
+        """
+        return self._exchangers.get(credential_type)

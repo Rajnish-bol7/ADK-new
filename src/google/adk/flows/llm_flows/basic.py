@@ -31,64 +31,64 @@ from ._base_llm_processor import BaseLlmRequestProcessor
 
 class _BasicLlmRequestProcessor(BaseLlmRequestProcessor):
 
-  @override
-  async def run_async(
-      self, invocation_context: InvocationContext, llm_request: LlmRequest
-  ) -> AsyncGenerator[Event, None]:
-    from ...agents.llm_agent import LlmAgent
+    @override
+    async def run_async(
+        self, invocation_context: InvocationContext, llm_request: LlmRequest
+    ) -> AsyncGenerator[Event, None]:
+        from ...agents.llm_agent import LlmAgent
 
-    agent = invocation_context.agent
+        agent = invocation_context.agent
 
-    llm_request.model = (
-        agent.canonical_model
-        if isinstance(agent.canonical_model, str)
-        else agent.canonical_model.model
-    )
-    llm_request.config = (
-        agent.generate_content_config.model_copy(deep=True)
-        if agent.generate_content_config
-        else types.GenerateContentConfig()
-    )
-    # Only set output_schema if no tools are specified. as of now, model don't
-    # support output_schema and tools together. we have a workaround to support
-    # both output_schema and tools at the same time. see
-    # _output_schema_processor.py for details
-    if agent.output_schema:
-      if not agent.tools or can_use_output_schema_with_tools(agent.model):
-        llm_request.set_output_schema(agent.output_schema)
+        llm_request.model = (
+            agent.canonical_model
+            if isinstance(agent.canonical_model, str)
+            else agent.canonical_model.model
+        )
+        llm_request.config = (
+            agent.generate_content_config.model_copy(deep=True)
+            if agent.generate_content_config
+            else types.GenerateContentConfig()
+        )
+        # Only set output_schema if no tools are specified. as of now, model don't
+        # support output_schema and tools together. we have a workaround to support
+        # both output_schema and tools at the same time. see
+        # _output_schema_processor.py for details
+        if agent.output_schema:
+            if not agent.tools or can_use_output_schema_with_tools(agent.model):
+                llm_request.set_output_schema(agent.output_schema)
 
-    llm_request.live_connect_config.response_modalities = (
-        invocation_context.run_config.response_modalities
-    )
-    llm_request.live_connect_config.speech_config = (
-        invocation_context.run_config.speech_config
-    )
-    llm_request.live_connect_config.output_audio_transcription = (
-        invocation_context.run_config.output_audio_transcription
-    )
-    llm_request.live_connect_config.input_audio_transcription = (
-        invocation_context.run_config.input_audio_transcription
-    )
-    llm_request.live_connect_config.realtime_input_config = (
-        invocation_context.run_config.realtime_input_config
-    )
-    llm_request.live_connect_config.enable_affective_dialog = (
-        invocation_context.run_config.enable_affective_dialog
-    )
-    llm_request.live_connect_config.proactivity = (
-        invocation_context.run_config.proactivity
-    )
-    llm_request.live_connect_config.session_resumption = (
-        invocation_context.run_config.session_resumption
-    )
-    llm_request.live_connect_config.context_window_compression = (
-        invocation_context.run_config.context_window_compression
-    )
+        llm_request.live_connect_config.response_modalities = (
+            invocation_context.run_config.response_modalities
+        )
+        llm_request.live_connect_config.speech_config = (
+            invocation_context.run_config.speech_config
+        )
+        llm_request.live_connect_config.output_audio_transcription = (
+            invocation_context.run_config.output_audio_transcription
+        )
+        llm_request.live_connect_config.input_audio_transcription = (
+            invocation_context.run_config.input_audio_transcription
+        )
+        llm_request.live_connect_config.realtime_input_config = (
+            invocation_context.run_config.realtime_input_config
+        )
+        llm_request.live_connect_config.enable_affective_dialog = (
+            invocation_context.run_config.enable_affective_dialog
+        )
+        llm_request.live_connect_config.proactivity = (
+            invocation_context.run_config.proactivity
+        )
+        llm_request.live_connect_config.session_resumption = (
+            invocation_context.run_config.session_resumption
+        )
+        llm_request.live_connect_config.context_window_compression = (
+            invocation_context.run_config.context_window_compression
+        )
 
-    # TODO: handle tool append here, instead of in BaseTool.process_llm_request.
+        # TODO: handle tool append here, instead of in BaseTool.process_llm_request.
 
-    return
-    yield  # Generator requires yield statement in function body.
+        return
+        yield  # Generator requires yield statement in function body.
 
 
 request_processor = _BasicLlmRequestProcessor()

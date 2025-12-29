@@ -18,8 +18,8 @@ from .oauth2_exchanger import OAuth2CredentialExchanger
 from .service_account_exchanger import ServiceAccountCredentialExchanger
 
 __all__ = [
-    'AutoAuthCredentialExchanger',
-    'BaseAuthCredentialExchanger',
-    'OAuth2CredentialExchanger',
-    'ServiceAccountCredentialExchanger',
+    "AutoAuthCredentialExchanger",
+    "BaseAuthCredentialExchanger",
+    "OAuth2CredentialExchanger",
+    "ServiceAccountCredentialExchanger",
 ]

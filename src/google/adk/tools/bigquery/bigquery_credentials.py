@@ -24,19 +24,19 @@ BIGQUERY_DEFAULT_SCOPE = ["https://www.googleapis.com/auth/bigquery"]
 
 @experimental(FeatureName.GOOGLE_CREDENTIALS_CONFIG)
 class BigQueryCredentialsConfig(BaseGoogleCredentialsConfig):
-  """BigQuery Credentials Configuration for Google API tools (Experimental).
+    """BigQuery Credentials Configuration for Google API tools (Experimental).
 
-  Please do not use this in production, as it may be deprecated later.
-  """
+    Please do not use this in production, as it may be deprecated later.
+    """
 
-  def __post_init__(self) -> BigQueryCredentialsConfig:
-    """Populate default scope if scopes is None."""
-    super().__post_init__()
+    def __post_init__(self) -> BigQueryCredentialsConfig:
+        """Populate default scope if scopes is None."""
+        super().__post_init__()
 
-    if not self.scopes:
-      self.scopes = BIGQUERY_DEFAULT_SCOPE
+        if not self.scopes:
+            self.scopes = BIGQUERY_DEFAULT_SCOPE
 
-    # Set the token cache key
-    self._token_cache_key = BIGQUERY_TOKEN_CACHE_KEY
+        # Set the token cache key
+        self._token_cache_key = BIGQUERY_TOKEN_CACHE_KEY
 
-    return self
+        return self

@@ -25,75 +25,79 @@ from typing_extensions import override
 from .base_tool import BaseTool
 
 if TYPE_CHECKING:
-  from ..models.llm_request import LlmRequest
-  from .tool_context import ToolContext
+    from ..models.llm_request import LlmRequest
+    from .tool_context import ToolContext
 
-logger = logging.getLogger('google_adk.' + __name__)
+logger = logging.getLogger("google_adk." + __name__)
 
 
 class LoadArtifactsTool(BaseTool):
-  """A tool that loads the artifacts and adds them to the session."""
+    """A tool that loads the artifacts and adds them to the session."""
 
-  def __init__(self):
-    super().__init__(
-        name='load_artifacts',
-        description=("""Loads artifacts into the session for this request.
+    def __init__(self):
+        super().__init__(
+            name="load_artifacts",
+            description=(
+                """Loads artifacts into the session for this request.
 
 NOTE: Call when you need access to artifacts (for example, uploads saved by the
-web UI)."""),
-    )
+web UI)."""
+            ),
+        )
 
-  def _get_declaration(self) -> types.FunctionDeclaration | None:
-    return types.FunctionDeclaration(
-        name=self.name,
-        description=self.description,
-        parameters=types.Schema(
-            type=types.Type.OBJECT,
-            properties={
-                'artifact_names': types.Schema(
-                    type=types.Type.ARRAY,
-                    items=types.Schema(
-                        type=types.Type.STRING,
-                    ),
-                )
-            },
-        ),
-    )
+    def _get_declaration(self) -> types.FunctionDeclaration | None:
+        return types.FunctionDeclaration(
+            name=self.name,
+            description=self.description,
+            parameters=types.Schema(
+                type=types.Type.OBJECT,
+                properties={
+                    "artifact_names": types.Schema(
+                        type=types.Type.ARRAY,
+                        items=types.Schema(
+                            type=types.Type.STRING,
+                        ),
+                    )
+                },
+            ),
+        )
 
-  @override
-  async def run_async(
-      self, *, args: dict[str, Any], tool_context: ToolContext
-  ) -> Any:
-    artifact_names: list[str] = args.get('artifact_names', [])
-    return {
-        'artifact_names': artifact_names,
-        'status': (
-            'artifact contents temporarily inserted and removed. to access'
-            ' these artifacts, call load_artifacts tool again.'
-        ),
-    }
+    @override
+    async def run_async(
+        self, *, args: dict[str, Any], tool_context: ToolContext
+    ) -> Any:
+        artifact_names: list[str] = args.get("artifact_names", [])
+        return {
+            "artifact_names": artifact_names,
+            "status": (
+                "artifact contents temporarily inserted and removed. to access"
+                " these artifacts, call load_artifacts tool again."
+            ),
+        }
 
-  @override
-  async def process_llm_request(
-      self, *, tool_context: ToolContext, llm_request: LlmRequest
-  ) -> None:
-    await super().process_llm_request(
-        tool_context=tool_context,
-        llm_request=llm_request,
-    )
-    await self._append_artifacts_to_llm_request(
-        tool_context=tool_context, llm_request=llm_request
-    )
+    @override
+    async def process_llm_request(
+        self, *, tool_context: ToolContext, llm_request: LlmRequest
+    ) -> None:
+        await super().process_llm_request(
+            tool_context=tool_context,
+            llm_request=llm_request,
+        )
+        await self._append_artifacts_to_llm_request(
+            tool_context=tool_context, llm_request=llm_request
+        )
 
-  async def _append_artifacts_to_llm_request(
-      self, *, tool_context: ToolContext, llm_request: LlmRequest
-  ):
-    artifact_names = await tool_context.list_artifacts()
-    if not artifact_names:
-      return
+    async def _append_artifacts_to_llm_request(
+        self, *, tool_context: ToolContext, llm_request: LlmRequest
+    ):
+        artifact_names = await tool_context.list_artifacts()
+        if not artifact_names:
+            return
 
-    # Tell the model about the available artifacts.
-    llm_request.append_instructions([f"""You have a list of artifacts:
+        # Tell the model about the available artifacts.
+        llm_request.append_instructions(
+            [
+                f"""You have a list of artifacts:
   {json.dumps(artifact_names)}
 
   When the user asks questions about any of the artifacts, you should call the
@@ -101,38 +105,42 @@ web UI)."""),
   before answering questions related to the artifacts, regardless of whether the
   artifacts have been loaded before. Do not depend on prior answers about the
   artifacts.
-  """])
+  """
+            ]
+        )
 
-    # Attach the content of the artifacts if the model requests them.
-    # This only adds the content to the model request, instead of the session.
-    if llm_request.contents and llm_request.contents[-1].parts:
-      function_response = llm_request.contents[-1].parts[0].function_response
-      if function_response and function_response.name == 'load_artifacts':
-        artifact_names = function_response.response['artifact_names']
-        for artifact_name in artifact_names:
-          # Try session-scoped first (default behavior)
-          artifact = await tool_context.load_artifact(artifact_name)
+        # Attach the content of the artifacts if the model requests them.
+        # This only adds the content to the model request, instead of the session.
+        if llm_request.contents and llm_request.contents[-1].parts:
+            function_response = llm_request.contents[-1].parts[0].function_response
+            if function_response and function_response.name == "load_artifacts":
+                artifact_names = function_response.response["artifact_names"]
+                for artifact_name in artifact_names:
+                    # Try session-scoped first (default behavior)
+                    artifact = await tool_context.load_artifact(artifact_name)
 
-          # If not found and name doesn't already have user: prefix,
-          # try cross-session artifacts with user: prefix
-          if artifact is None and not artifact_name.startswith('user:'):
-            prefixed_name = f'user:{artifact_name}'
-            artifact = await tool_context.load_artifact(prefixed_name)
+                    # If not found and name doesn't already have user: prefix,
+                    # try cross-session artifacts with user: prefix
+                    if artifact is None and not artifact_name.startswith("user:"):
+                        prefixed_name = f"user:{artifact_name}"
+                        artifact = await tool_context.load_artifact(prefixed_name)
 
-          if artifact is None:
-            logger.warning('Artifact "%s" not found, skipping', artifact_name)
-            continue
-          llm_request.contents.append(
-              types.Content(
-                  role='user',
-                  parts=[
-                      types.Part.from_text(
-                          text=f'Artifact {artifact_name} is:'
-                      ),
-                      artifact,
-                  ],
-              )
-          )
+                    if artifact is None:
+                        logger.warning(
+                            'Artifact "%s" not found, skipping', artifact_name
+                        )
+                        continue
+                    llm_request.contents.append(
+                        types.Content(
+                            role="user",
+                            parts=[
+                                types.Part.from_text(
+                                    text=f"Artifact {artifact_name} is:"
+                                ),
+                                artifact,
+                            ],
+                        )
+                    )
 
 
 load_artifacts_tool = LoadArtifactsTool()

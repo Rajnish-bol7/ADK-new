@@ -24,26 +24,24 @@ from .state import State
 M = TypeVar("M")
 
 
-def decode_model(
-    data: Optional[dict[str, Any]], model_cls: Type[M]
-) -> Optional[M]:
-  """Decodes a pydantic model object from a JSON dictionary."""
-  if data is None:
-    return None
-  return model_cls.model_validate(data)
+def decode_model(data: Optional[dict[str, Any]], model_cls: Type[M]) -> Optional[M]:
+    """Decodes a pydantic model object from a JSON dictionary."""
+    if data is None:
+        return None
+    return model_cls.model_validate(data)
 
 
 def extract_state_delta(
     state: dict[str, Any],
 ) -> dict[str, dict[str, Any]]:
-  """Extracts app, user, and session state deltas from a state dictionary."""
-  deltas = {"app": {}, "user": {}, "session": {}}
-  if state:
-    for key in state.keys():
-      if key.startswith(State.APP_PREFIX):
-        deltas["app"][key.removeprefix(State.APP_PREFIX)] = state[key]
-      elif key.startswith(State.USER_PREFIX):
-        deltas["user"][key.removeprefix(State.USER_PREFIX)] = state[key]
-      elif not key.startswith(State.TEMP_PREFIX):
-        deltas["session"][key] = state[key]
-  return deltas
+    """Extracts app, user, and session state deltas from a state dictionary."""
+    deltas = {"app": {}, "user": {}, "session": {}}
+    if state:
+        for key in state.keys():
+            if key.startswith(State.APP_PREFIX):
+                deltas["app"][key.removeprefix(State.APP_PREFIX)] = state[key]
+            elif key.startswith(State.USER_PREFIX):
+                deltas["user"][key.removeprefix(State.USER_PREFIX)] = state[key]
+            elif not key.startswith(State.TEMP_PREFIX):
+                deltas["session"][key] = state[key]
+    return deltas

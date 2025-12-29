@@ -28,31 +28,31 @@ from ..utils.feature_decorator import experimental
 
 @experimental
 class ArgumentConfig(BaseModel):
-  """An argument passed to a function or a class's constructor."""
+    """An argument passed to a function or a class's constructor."""
 
-  model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid")
 
-  name: Optional[str] = None
-  """Optional. The argument name.
+    name: Optional[str] = None
+    """Optional. The argument name.
 
   When the argument is for a positional argument, this can be omitted.
   """
 
-  value: Any
-  """The argument value."""
+    value: Any
+    """The argument value."""
 
 
 @experimental
 class CodeConfig(BaseModel):
-  """Code reference config for a variable, a function, or a class.
+    """Code reference config for a variable, a function, or a class.
 
-  This config is used for configuring callbacks and tools.
-  """
+    This config is used for configuring callbacks and tools.
+    """
 
-  model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid")
 
-  name: str
-  """Required. The name of the variable, function, class, etc. in code.
+    name: str
+    """Required. The name of the variable, function, class, etc. in code.
 
   Examples:
 
@@ -63,8 +63,8 @@ class CodeConfig(BaseModel):
     When used for callbacks, it refers to a function, e.g. `my_library.my_callbacks.my_callback`
   """
 
-  args: Optional[List[ArgumentConfig]] = None
-  """Optional. The arguments for the code when `name` refers to a function or a
+    args: Optional[List[ArgumentConfig]] = None
+    """Optional. The arguments for the code when `name` refers to a function or a
   class's constructor.
 
   Examples:
@@ -82,12 +82,12 @@ class CodeConfig(BaseModel):
 
 @experimental
 class AgentRefConfig(BaseModel):
-  """The config for the reference to another agent."""
+    """The config for the reference to another agent."""
 
-  model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid")
 
-  config_path: Optional[str] = None
-  """The YAML config file path of the sub-agent.
+    config_path: Optional[str] = None
+    """The YAML config file path of the sub-agent.
 
   Only one of `config_path` or `code` can be set.
 
@@ -100,8 +100,8 @@ class AgentRefConfig(BaseModel):
     ```
   """
 
-  code: Optional[str] = None
-  """The agent instance defined in the code.
+    code: Optional[str] = None
+    """The agent instance defined in the code.
 
   Only one of `config` or `code` can be set.
 
@@ -128,16 +128,14 @@ class AgentRefConfig(BaseModel):
     ```
     """
 
-  @model_validator(mode="after")
-  def validate_exactly_one_field(self) -> AgentRefConfig:
-    code_provided = self.code is not None
-    config_path_provided = self.config_path is not None
+    @model_validator(mode="after")
+    def validate_exactly_one_field(self) -> AgentRefConfig:
+        code_provided = self.code is not None
+        config_path_provided = self.config_path is not None
 
-    if code_provided and config_path_provided:
-      raise ValueError("Only one of `code` or `config_path` should be provided")
-    if not code_provided and not config_path_provided:
-      raise ValueError(
-          "Exactly one of `code` or `config_path` must be provided"
-      )
+        if code_provided and config_path_provided:
+            raise ValueError("Only one of `code` or `config_path` should be provided")
+        if not code_provided and not config_path_provided:
+            raise ValueError("Exactly one of `code` or `config_path` must be provided")
 
-    return self
+        return self

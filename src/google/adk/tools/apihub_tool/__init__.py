@@ -15,5 +15,5 @@
 from .apihub_toolset import APIHubToolset
 
 __all__ = [
-    'APIHubToolset',
+    "APIHubToolset",
 ]

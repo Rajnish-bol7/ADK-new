@@ -21,24 +21,24 @@ from .single_flow import SingleFlow
 
 
 class AutoFlow(SingleFlow):
-  """AutoFlow is SingleFlow with agent transfer capability.
+    """AutoFlow is SingleFlow with agent transfer capability.
 
-  Agent transfer is allowed in the following direction:
+    Agent transfer is allowed in the following direction:
 
-  1. from parent to sub-agent;
-  2. from sub-agent to parent;
-  3. from sub-agent to its peer agents;
+    1. from parent to sub-agent;
+    2. from sub-agent to parent;
+    3. from sub-agent to its peer agents;
 
-  For peer-agent transfers, it's only enabled when all below conditions are met:
+    For peer-agent transfers, it's only enabled when all below conditions are met:
 
-  - The parent agent is also an LlmAgent.
-  - `disallow_transfer_to_peers` option of this agent is False (default).
+    - The parent agent is also an LlmAgent.
+    - `disallow_transfer_to_peers` option of this agent is False (default).
 
-  Depending on the target agent type, the transfer may be automatically
-  reversed. (see Runner._find_agent_to_run method for which agent will remain
-  active to handle next user message.)
-  """
+    Depending on the target agent type, the transfer may be automatically
+    reversed. (see Runner._find_agent_to_run method for which agent will remain
+    active to handle next user message.)
+    """
 
-  def __init__(self):
-    super().__init__()
-    self.request_processors += [agent_transfer.request_processor]
+    def __init__(self):
+        super().__init__()
+        self.request_processors += [agent_transfer.request_processor]

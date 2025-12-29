@@ -27,19 +27,19 @@ from ..utils.feature_decorator import experimental
 
 @experimental
 class ToolConfirmation(BaseModel):
-  """Represents a tool confirmation configuration."""
+    """Represents a tool confirmation configuration."""
 
-  model_config = ConfigDict(
-      extra="forbid",
-      alias_generator=alias_generators.to_camel,
-      populate_by_name=True,
-  )
-  """The pydantic model config."""
+    model_config = ConfigDict(
+        extra="forbid",
+        alias_generator=alias_generators.to_camel,
+        populate_by_name=True,
+    )
+    """The pydantic model config."""
 
-  hint: str = ""
-  """The hint text for why the input is needed."""
-  confirmed: bool = False
-  """Whether the tool execution is confirmed."""
-  payload: Optional[Any] = None
-  """The custom data payload needed from the user to continue the flow.
+    hint: str = ""
+    """The hint text for why the input is needed."""
+    confirmed: bool = False
+    """Whether the tool execution is confirmed."""
+    payload: Optional[Any] = None
+    """The custom data payload needed from the user to continue the flow.
   It should be JSON serializable."""

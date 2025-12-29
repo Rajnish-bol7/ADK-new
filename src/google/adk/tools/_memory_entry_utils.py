@@ -18,13 +18,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-  from ..memory.memory_entry import MemoryEntry
+    from ..memory.memory_entry import MemoryEntry
 
 
-def extract_text(memory: MemoryEntry, splitter: str = ' ') -> str:
-  """Extracts the text from the memory entry."""
-  if not memory.content.parts:
-    return ''
-  return splitter.join(
-      [part.text for part in memory.content.parts if part.text]
-  )
+def extract_text(memory: MemoryEntry, splitter: str = " ") -> str:
+    """Extracts the text from the memory entry."""
+    if not memory.content.parts:
+        return ""
+    return splitter.join([part.text for part in memory.content.parts if part.text])

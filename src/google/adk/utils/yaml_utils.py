@@ -24,26 +24,26 @@ from pydantic import BaseModel
 import yaml
 
 if TYPE_CHECKING:
-  from pydantic.main import IncEx
+    from pydantic.main import IncEx
 
 
 def load_yaml_file(file_path: Union[str, Path]) -> Any:
-  """Loads a YAML file and returns its content.
+    """Loads a YAML file and returns its content.
 
-  Args:
-    file_path: Path to the YAML file.
+    Args:
+      file_path: Path to the YAML file.
 
-  Returns:
-    The content of the YAML file.
+    Returns:
+      The content of the YAML file.
 
-  Raises:
-    FileNotFoundError: If the file_path does not exist.
-  """
-  file_path = Path(file_path)
-  if not file_path.is_file():
-    raise FileNotFoundError(f'YAML file not found: {file_path}')
-  with file_path.open('r', encoding='utf-8') as f:
-    return yaml.safe_load(f)
+    Raises:
+      FileNotFoundError: If the file_path does not exist.
+    """
+    file_path = Path(file_path)
+    if not file_path.is_file():
+        raise FileNotFoundError(f"YAML file not found: {file_path}")
+    with file_path.open("r", encoding="utf-8") as f:
+        return yaml.safe_load(f)
 
 
 def dump_pydantic_to_yaml(
@@ -56,54 +56,54 @@ def dump_pydantic_to_yaml(
     exclude_defaults: bool = True,
     exclude: Optional[IncEx] = None,
 ) -> None:
-  """Dump a Pydantic model to a YAML file with multiline strings using | style.
+    """Dump a Pydantic model to a YAML file with multiline strings using | style.
 
-  Args:
-    model: The Pydantic model instance to dump.
-    file_path: Path to the output YAML file.
-    indent: Number of spaces for indentation (default: 2).
-    sort_keys: Whether to sort dictionary keys (default: True).
-    exclude_none: Exclude fields with None values (default: True).
-    exclude_defaults: Exclude fields with default values (default: True).
-    exclude: Fields to exclude from the output. Can be a set of field names or
-      a nested dict for fine-grained exclusion (default: None).
-  """
-  model_dict = model.model_dump(
-      exclude_none=exclude_none,
-      exclude_defaults=exclude_defaults,
-      exclude=exclude,
-      mode='json',
-  )
-
-  file_path = Path(file_path)
-  file_path.parent.mkdir(parents=True, exist_ok=True)
-
-  class _MultilineDumper(yaml.SafeDumper):
-
-    def increase_indent(self, flow=False, indentless=False):
-      """Override to force consistent indentation for sequences in mappings.
-
-      By default, PyYAML uses indentless=True for sequences that are values
-      in mappings, creating flush-left alignment. This override forces proper
-      indentation for all sequences regardless of context.
-      """
-      return super(_MultilineDumper, self).increase_indent(flow, False)
-
-  def multiline_str_representer(dumper, data):
-    if '\n' in data or '"' in data or "'" in data:
-      return dumper.represent_scalar('tag:yaml.org,2002:str', data, style='|')
-    return dumper.represent_scalar('tag:yaml.org,2002:str', data)
-
-  # Add representer only to our custom dumper
-  _MultilineDumper.add_representer(str, multiline_str_representer)
-
-  with file_path.open('w', encoding='utf-8') as f:
-    yaml.dump(
-        model_dict,
-        f,
-        Dumper=_MultilineDumper,
-        indent=indent,
-        sort_keys=sort_keys,
-        width=1000000,  # Essentially disable text wraps
-        allow_unicode=True,  # Do not escape non-ascii characters.
+    Args:
+      model: The Pydantic model instance to dump.
+      file_path: Path to the output YAML file.
+      indent: Number of spaces for indentation (default: 2).
+      sort_keys: Whether to sort dictionary keys (default: True).
+      exclude_none: Exclude fields with None values (default: True).
+      exclude_defaults: Exclude fields with default values (default: True).
+      exclude: Fields to exclude from the output. Can be a set of field names or
+        a nested dict for fine-grained exclusion (default: None).
+    """
+    model_dict = model.model_dump(
+        exclude_none=exclude_none,
+        exclude_defaults=exclude_defaults,
+        exclude=exclude,
+        mode="json",
     )
+
+    file_path = Path(file_path)
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+
+    class _MultilineDumper(yaml.SafeDumper):
+
+        def increase_indent(self, flow=False, indentless=False):
+            """Override to force consistent indentation for sequences in mappings.
+
+            By default, PyYAML uses indentless=True for sequences that are values
+            in mappings, creating flush-left alignment. This override forces proper
+            indentation for all sequences regardless of context.
+            """
+            return super(_MultilineDumper, self).increase_indent(flow, False)
+
+    def multiline_str_representer(dumper, data):
+        if "\n" in data or '"' in data or "'" in data:
+            return dumper.represent_scalar("tag:yaml.org,2002:str", data, style="|")
+        return dumper.represent_scalar("tag:yaml.org,2002:str", data)
+
+    # Add representer only to our custom dumper
+    _MultilineDumper.add_representer(str, multiline_str_representer)
+
+    with file_path.open("w", encoding="utf-8") as f:
+        yaml.dump(
+            model_dict,
+            f,
+            Dumper=_MultilineDumper,
+            indent=indent,
+            sort_keys=sort_keys,
+            width=1000000,  # Essentially disable text wraps
+            allow_unicode=True,  # Do not escape non-ascii characters.
+        )

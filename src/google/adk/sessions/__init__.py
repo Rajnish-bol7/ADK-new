@@ -18,24 +18,24 @@ from .state import State
 from .vertex_ai_session_service import VertexAiSessionService
 
 __all__ = [
-    'BaseSessionService',
-    'DatabaseSessionService',
-    'InMemorySessionService',
-    'Session',
-    'State',
-    'VertexAiSessionService',
+    "BaseSessionService",
+    "DatabaseSessionService",
+    "InMemorySessionService",
+    "Session",
+    "State",
+    "VertexAiSessionService",
 ]
 
 
 def __getattr__(name: str):
-  if name == 'DatabaseSessionService':
-    try:
-      from .database_session_service import DatabaseSessionService
+    if name == "DatabaseSessionService":
+        try:
+            from .database_session_service import DatabaseSessionService
 
-      return DatabaseSessionService
-    except ImportError as e:
-      raise ImportError(
-          'DatabaseSessionService requires sqlalchemy>=2.0, please ensure it is'
-          ' installed correctly.'
-      ) from e
-  raise AttributeError(f'module {__name__!r} has no attribute {name!r}')
+            return DatabaseSessionService
+        except ImportError as e:
+            raise ImportError(
+                "DatabaseSessionService requires sqlalchemy>=2.0, please ensure it is"
+                " installed correctly."
+            ) from e
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

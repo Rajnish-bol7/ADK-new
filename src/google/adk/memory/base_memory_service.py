@@ -25,54 +25,54 @@ from pydantic import Field
 from .memory_entry import MemoryEntry
 
 if TYPE_CHECKING:
-  from ..sessions.session import Session
+    from ..sessions.session import Session
 
 
 class SearchMemoryResponse(BaseModel):
-  """Represents the response from a memory search.
+    """Represents the response from a memory search.
 
-  Attributes:
-      memories: A list of memory entries that relate to the search query.
-  """
+    Attributes:
+        memories: A list of memory entries that relate to the search query.
+    """
 
-  memories: list[MemoryEntry] = Field(default_factory=list)
+    memories: list[MemoryEntry] = Field(default_factory=list)
 
 
 class BaseMemoryService(ABC):
-  """Base class for memory services.
+    """Base class for memory services.
 
-  The service provides functionalities to ingest sessions into memory so that
-  the memory can be used for user queries.
-  """
-
-  @abstractmethod
-  async def add_session_to_memory(
-      self,
-      session: Session,
-  ):
-    """Adds a session to the memory service.
-
-    A session may be added multiple times during its lifetime.
-
-    Args:
-        session: The session to add.
+    The service provides functionalities to ingest sessions into memory so that
+    the memory can be used for user queries.
     """
 
-  @abstractmethod
-  async def search_memory(
-      self,
-      *,
-      app_name: str,
-      user_id: str,
-      query: str,
-  ) -> SearchMemoryResponse:
-    """Searches for sessions that match the query.
+    @abstractmethod
+    async def add_session_to_memory(
+        self,
+        session: Session,
+    ):
+        """Adds a session to the memory service.
 
-    Args:
-        app_name: The name of the application.
-        user_id: The id of the user.
-        query: The query to search for.
+        A session may be added multiple times during its lifetime.
 
-    Returns:
-        A SearchMemoryResponse containing the matching memories.
-    """
+        Args:
+            session: The session to add.
+        """
+
+    @abstractmethod
+    async def search_memory(
+        self,
+        *,
+        app_name: str,
+        user_id: str,
+        query: str,
+    ) -> SearchMemoryResponse:
+        """Searches for sessions that match the query.
+
+        Args:
+            app_name: The name of the application.
+            user_id: The id of the user.
+            query: The query to search for.
+
+        Returns:
+            A SearchMemoryResponse containing the matching memories.
+        """

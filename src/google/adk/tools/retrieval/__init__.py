@@ -23,34 +23,34 @@ __all__ = [
 
 
 def __getattr__(name: str):
-  if name == "FilesRetrieval":
-    try:
-      from .files_retrieval import FilesRetrieval
+    if name == "FilesRetrieval":
+        try:
+            from .files_retrieval import FilesRetrieval
 
-      return FilesRetrieval
-    except ImportError as e:
-      raise ImportError(
-          "FilesRetrieval requires additional dependencies. "
-          'Please install with: pip install "google-adk[extensions]"'
-      ) from e
-  elif name == "LlamaIndexRetrieval":
-    try:
-      from .llama_index_retrieval import LlamaIndexRetrieval
+            return FilesRetrieval
+        except ImportError as e:
+            raise ImportError(
+                "FilesRetrieval requires additional dependencies. "
+                'Please install with: pip install "google-adk[extensions]"'
+            ) from e
+    elif name == "LlamaIndexRetrieval":
+        try:
+            from .llama_index_retrieval import LlamaIndexRetrieval
 
-      return LlamaIndexRetrieval
-    except ImportError as e:
-      raise ImportError(
-          "LlamaIndexRetrieval requires additional dependencies. "
-          'Please install with: pip install "google-adk[extensions]"'
-      ) from e
-  elif name == "VertexAiRagRetrieval":
-    try:
-      from .vertex_ai_rag_retrieval import VertexAiRagRetrieval
+            return LlamaIndexRetrieval
+        except ImportError as e:
+            raise ImportError(
+                "LlamaIndexRetrieval requires additional dependencies. "
+                'Please install with: pip install "google-adk[extensions]"'
+            ) from e
+    elif name == "VertexAiRagRetrieval":
+        try:
+            from .vertex_ai_rag_retrieval import VertexAiRagRetrieval
 
-      return VertexAiRagRetrieval
-    except ImportError as e:
-      raise ImportError(
-          "VertexAiRagRetrieval requires additional dependencies. "
-          'Please install with: pip install "google-adk[extensions]"'
-      ) from e
-  raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
+            return VertexAiRagRetrieval
+        except ImportError as e:
+            raise ImportError(
+                "VertexAiRagRetrieval requires additional dependencies. "
+                'Please install with: pip install "google-adk[extensions]"'
+            ) from e
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")

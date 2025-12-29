@@ -30,112 +30,112 @@ from .invocation_context import InvocationContext
 
 
 def _get_last_human_messages(events: list[Event]) -> list[HumanMessage]:
-  """Extracts last human messages from given list of events.
+    """Extracts last human messages from given list of events.
 
-  Args:
-    events: the list of events
+    Args:
+      events: the list of events
 
-  Returns:
-    list of last human messages
-  """
-  messages = []
-  for event in reversed(events):
-    if messages and event.author != 'user':
-      break
-    if event.author == 'user' and event.content and event.content.parts:
-      messages.append(HumanMessage(content=event.content.parts[0].text))
-  return list(reversed(messages))
+    Returns:
+      list of last human messages
+    """
+    messages = []
+    for event in reversed(events):
+        if messages and event.author != "user":
+            break
+        if event.author == "user" and event.content and event.content.parts:
+            messages.append(HumanMessage(content=event.content.parts[0].text))
+    return list(reversed(messages))
 
 
 class LangGraphAgent(BaseAgent):
-  """Currently a concept implementation, supports single and multi-turn."""
+    """Currently a concept implementation, supports single and multi-turn."""
 
-  model_config = ConfigDict(
-      arbitrary_types_allowed=True,
-  )
-  """The pydantic model config."""
-
-  graph: CompiledGraph
-
-  instruction: str = ''
-
-  @override
-  async def _run_async_impl(
-      self,
-      ctx: InvocationContext,
-  ) -> AsyncGenerator[Event, None]:
-
-    # Needed for langgraph checkpointer (for subsequent invocations; multi-turn)
-    config: RunnableConfig = {'configurable': {'thread_id': ctx.session.id}}
-
-    # Add instruction as SystemMessage if graph state is empty
-    current_graph_state = self.graph.get_state(config)
-    graph_messages = (
-        current_graph_state.values.get('messages', [])
-        if current_graph_state.values
-        else []
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
     )
-    messages = (
-        [SystemMessage(content=self.instruction)]
-        if self.instruction and not graph_messages
-        else []
-    )
-    # Add events to messages (evaluating the memory used; parent agent vs checkpointer)
-    messages += self._get_messages(ctx.session.events)
+    """The pydantic model config."""
 
-    # Use the Runnable
-    final_state = self.graph.invoke({'messages': messages}, config)
-    result = final_state['messages'][-1].content
+    graph: CompiledGraph
 
-    result_event = Event(
-        invocation_id=ctx.invocation_id,
-        author=self.name,
-        branch=ctx.branch,
-        content=types.Content(
-            role='model',
-            parts=[types.Part.from_text(text=result)],
-        ),
-    )
-    yield result_event
+    instruction: str = ""
 
-  def _get_messages(
-      self, events: list[Event]
-  ) -> list[Union[HumanMessage, AIMessage]]:
-    """Extracts messages from given list of events.
+    @override
+    async def _run_async_impl(
+        self,
+        ctx: InvocationContext,
+    ) -> AsyncGenerator[Event, None]:
 
-    If the developer provides their own memory within langgraph, we return the
-    last user messages only. Otherwise, we return all messages between the user
-    and the agent.
+        # Needed for langgraph checkpointer (for subsequent invocations; multi-turn)
+        config: RunnableConfig = {"configurable": {"thread_id": ctx.session.id}}
 
-    Args:
-      events: the list of events
+        # Add instruction as SystemMessage if graph state is empty
+        current_graph_state = self.graph.get_state(config)
+        graph_messages = (
+            current_graph_state.values.get("messages", [])
+            if current_graph_state.values
+            else []
+        )
+        messages = (
+            [SystemMessage(content=self.instruction)]
+            if self.instruction and not graph_messages
+            else []
+        )
+        # Add events to messages (evaluating the memory used; parent agent vs checkpointer)
+        messages += self._get_messages(ctx.session.events)
 
-    Returns:
-      list of messages
-    """
-    if self.graph.checkpointer:
-      return _get_last_human_messages(events)
-    else:
-      return self._get_conversation_with_agent(events)
+        # Use the Runnable
+        final_state = self.graph.invoke({"messages": messages}, config)
+        result = final_state["messages"][-1].content
 
-  def _get_conversation_with_agent(
-      self, events: list[Event]
-  ) -> list[Union[HumanMessage, AIMessage]]:
-    """Extracts messages from given list of events.
+        result_event = Event(
+            invocation_id=ctx.invocation_id,
+            author=self.name,
+            branch=ctx.branch,
+            content=types.Content(
+                role="model",
+                parts=[types.Part.from_text(text=result)],
+            ),
+        )
+        yield result_event
 
-    Args:
-      events: the list of events
+    def _get_messages(
+        self, events: list[Event]
+    ) -> list[Union[HumanMessage, AIMessage]]:
+        """Extracts messages from given list of events.
 
-    Returns:
-      list of messages
-    """
+        If the developer provides their own memory within langgraph, we return the
+        last user messages only. Otherwise, we return all messages between the user
+        and the agent.
 
-    messages = []
-    for event in events:
-      if not event.content or not event.content.parts:
-        continue
-      if event.author == 'user':
-        messages.append(HumanMessage(content=event.content.parts[0].text))
-      elif event.author == self.name:
-        messages.append(AIMessage(content=event.content.parts[0].text))
-    return messages
+        Args:
+          events: the list of events
+
+        Returns:
+          list of messages
+        """
+        if self.graph.checkpointer:
+            return _get_last_human_messages(events)
+        else:
+            return self._get_conversation_with_agent(events)
+
+    def _get_conversation_with_agent(
+        self, events: list[Event]
+    ) -> list[Union[HumanMessage, AIMessage]]:
+        """Extracts messages from given list of events.
+
+        Args:
+          events: the list of events
+
+        Returns:
+          list of messages
+        """
+
+        messages = []
+        for event in events:
+            if not event.content or not event.content.parts:
+                continue
+            if event.author == "user":
+                messages.append(HumanMessage(content=event.content.parts[0].text))
+            elif event.author == self.name:
+                messages.append(AIMessage(content=event.content.parts[0].text))
+        return messages

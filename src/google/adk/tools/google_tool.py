@@ -33,101 +33,99 @@ from .tool_context import ToolContext
 
 @experimental(FeatureName.GOOGLE_TOOL)
 class GoogleTool(FunctionTool):
-  """GoogleTool class for tools that call Google APIs.
+    """GoogleTool class for tools that call Google APIs.
 
-  This class is for developers to handcraft customized Google API tools rather
-  than auto generate Google API tools based on API specs.
+    This class is for developers to handcraft customized Google API tools rather
+    than auto generate Google API tools based on API specs.
 
-  This class handles all the OAuth complexity, credential management,
-  and common Google API patterns so subclasses can focus on their
-  specific functionality.
-  """
-
-  def __init__(
-      self,
-      func: Callable[..., Any],
-      *,
-      credentials_config: Optional[BaseGoogleCredentialsConfig] = None,
-      tool_settings: Optional[BaseModel] = None,
-  ):
-    """Initialize the Google API tool.
-
-    Args:
-        func: callable that implements the tool's logic, can accept one
-          'credential" parameter
-        credentials_config: credentials config used to call Google API. If None,
-          then we don't handle the auth logic
-        tool_settings: Tool-specific settings. This settings should be provided
-          by each toolset that uses this class to create customized tools.
+    This class handles all the OAuth complexity, credential management,
+    and common Google API patterns so subclasses can focus on their
+    specific functionality.
     """
-    super().__init__(func=func)
-    self._ignore_params.append("credentials")
-    self._ignore_params.append("settings")
-    self._credentials_manager = (
-        GoogleCredentialsManager(credentials_config)
-        if credentials_config
-        else None
-    )
-    self._tool_settings = tool_settings
 
-  @override
-  async def run_async(
-      self, *, args: dict[str, Any], tool_context: ToolContext
-  ) -> Any:
-    """Main entry point for tool execution with credential handling.
+    def __init__(
+        self,
+        func: Callable[..., Any],
+        *,
+        credentials_config: Optional[BaseGoogleCredentialsConfig] = None,
+        tool_settings: Optional[BaseModel] = None,
+    ):
+        """Initialize the Google API tool.
 
-    This method handles all the OAuth complexity and then delegates
-    to the subclass's run_async_with_credential method.
-    """
-    try:
-      # Get valid credentials
-      credentials = (
-          await self._credentials_manager.get_valid_credentials(tool_context)
-          if self._credentials_manager
-          else None
-      )
-
-      if credentials is None and self._credentials_manager:
-        # OAuth flow in progress
-        return (
-            "User authorization is required to access Google services for"
-            f" {self.name}. Please complete the authorization flow."
+        Args:
+            func: callable that implements the tool's logic, can accept one
+              'credential" parameter
+            credentials_config: credentials config used to call Google API. If None,
+              then we don't handle the auth logic
+            tool_settings: Tool-specific settings. This settings should be provided
+              by each toolset that uses this class to create customized tools.
+        """
+        super().__init__(func=func)
+        self._ignore_params.append("credentials")
+        self._ignore_params.append("settings")
+        self._credentials_manager = (
+            GoogleCredentialsManager(credentials_config) if credentials_config else None
         )
+        self._tool_settings = tool_settings
 
-      # Execute the tool's specific logic with valid credentials
+    @override
+    async def run_async(
+        self, *, args: dict[str, Any], tool_context: ToolContext
+    ) -> Any:
+        """Main entry point for tool execution with credential handling.
 
-      return await self._run_async_with_credential(
-          credentials, self._tool_settings, args, tool_context
-      )
+        This method handles all the OAuth complexity and then delegates
+        to the subclass's run_async_with_credential method.
+        """
+        try:
+            # Get valid credentials
+            credentials = (
+                await self._credentials_manager.get_valid_credentials(tool_context)
+                if self._credentials_manager
+                else None
+            )
 
-    except Exception as ex:
-      return {
-          "status": "ERROR",
-          "error_details": str(ex),
-      }
+            if credentials is None and self._credentials_manager:
+                # OAuth flow in progress
+                return (
+                    "User authorization is required to access Google services for"
+                    f" {self.name}. Please complete the authorization flow."
+                )
 
-  async def _run_async_with_credential(
-      self,
-      credentials: Credentials,
-      tool_settings: BaseModel,
-      args: dict[str, Any],
-      tool_context: ToolContext,
-  ) -> Any:
-    """Execute the tool's specific logic with valid credentials.
+            # Execute the tool's specific logic with valid credentials
 
-    Args:
-        credentials: Valid Google OAuth credentials
-        tool_settings: Tool settings
-        args: Arguments passed to the tool
-        tool_context: Tool execution context
+            return await self._run_async_with_credential(
+                credentials, self._tool_settings, args, tool_context
+            )
 
-    Returns:
-        The result of the tool execution
-    """
-    args_to_call = args.copy()
-    signature = inspect.signature(self.func)
-    if "credentials" in signature.parameters:
-      args_to_call["credentials"] = credentials
-    if "settings" in signature.parameters:
-      args_to_call["settings"] = tool_settings
-    return await super().run_async(args=args_to_call, tool_context=tool_context)
+        except Exception as ex:
+            return {
+                "status": "ERROR",
+                "error_details": str(ex),
+            }
+
+    async def _run_async_with_credential(
+        self,
+        credentials: Credentials,
+        tool_settings: BaseModel,
+        args: dict[str, Any],
+        tool_context: ToolContext,
+    ) -> Any:
+        """Execute the tool's specific logic with valid credentials.
+
+        Args:
+            credentials: Valid Google OAuth credentials
+            tool_settings: Tool settings
+            args: Arguments passed to the tool
+            tool_context: Tool execution context
+
+        Returns:
+            The result of the tool execution
+        """
+        args_to_call = args.copy()
+        signature = inspect.signature(self.func)
+        if "credentials" in signature.parameters:
+            args_to_call["credentials"] = credentials
+        if "settings" in signature.parameters:
+            args_to_call["settings"] = tool_settings
+        return await super().run_async(args=args_to_call, tool_context=tool_context)

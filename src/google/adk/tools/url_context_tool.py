@@ -25,39 +25,37 @@ from .base_tool import BaseTool
 from .tool_context import ToolContext
 
 if TYPE_CHECKING:
-  from ..models import LlmRequest
+    from ..models import LlmRequest
 
 
 class UrlContextTool(BaseTool):
-  """A built-in tool that is automatically invoked by Gemini 2 models to retrieve content from the URLs and use that content to inform and shape its response.
+    """A built-in tool that is automatically invoked by Gemini 2 models to retrieve content from the URLs and use that content to inform and shape its response.
 
-  This tool operates internally within the model and does not require or perform
-  local code execution.
-  """
+    This tool operates internally within the model and does not require or perform
+    local code execution.
+    """
 
-  def __init__(self):
-    # Name and description are not used because this is a model built-in tool.
-    super().__init__(name='url_context', description='url_context')
+    def __init__(self):
+        # Name and description are not used because this is a model built-in tool.
+        super().__init__(name="url_context", description="url_context")
 
-  @override
-  async def process_llm_request(
-      self,
-      *,
-      tool_context: ToolContext,
-      llm_request: LlmRequest,
-  ) -> None:
-    llm_request.config = llm_request.config or types.GenerateContentConfig()
-    llm_request.config.tools = llm_request.config.tools or []
-    if is_gemini_1_model(llm_request.model):
-      raise ValueError('Url context tool cannot be used in Gemini 1.x.')
-    elif is_gemini_2_or_above(llm_request.model):
-      llm_request.config.tools.append(
-          types.Tool(url_context=types.UrlContext())
-      )
-    else:
-      raise ValueError(
-          f'Url context tool is not supported for model {llm_request.model}'
-      )
+    @override
+    async def process_llm_request(
+        self,
+        *,
+        tool_context: ToolContext,
+        llm_request: LlmRequest,
+    ) -> None:
+        llm_request.config = llm_request.config or types.GenerateContentConfig()
+        llm_request.config.tools = llm_request.config.tools or []
+        if is_gemini_1_model(llm_request.model):
+            raise ValueError("Url context tool cannot be used in Gemini 1.x.")
+        elif is_gemini_2_or_above(llm_request.model):
+            llm_request.config.tools.append(types.Tool(url_context=types.UrlContext()))
+        else:
+            raise ValueError(
+                f"Url context tool is not supported for model {llm_request.model}"
+            )
 
 
 url_context = UrlContextTool()

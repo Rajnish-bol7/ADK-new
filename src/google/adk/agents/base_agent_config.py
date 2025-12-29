@@ -30,41 +30,41 @@ from ..utils.feature_decorator import experimental
 from .common_configs import AgentRefConfig
 from .common_configs import CodeConfig
 
-TBaseAgentConfig = TypeVar('TBaseAgentConfig', bound='BaseAgentConfig')
+TBaseAgentConfig = TypeVar("TBaseAgentConfig", bound="BaseAgentConfig")
 
 
 @experimental
 class BaseAgentConfig(BaseModel):
-  """The config for the YAML schema of a BaseAgent.
+    """The config for the YAML schema of a BaseAgent.
 
-  Do not use this class directly. It's the base class for all agent configs.
-  """
+    Do not use this class directly. It's the base class for all agent configs.
+    """
 
-  model_config = ConfigDict(
-      extra='allow',
-  )
+    model_config = ConfigDict(
+        extra="allow",
+    )
 
-  agent_class: Union[Literal['BaseAgent'], str] = Field(
-      default='BaseAgent',
-      description=(
-          'Required. The class of the agent. The value is used to differentiate'
-          ' among different agent classes.'
-      ),
-  )
+    agent_class: Union[Literal["BaseAgent"], str] = Field(
+        default="BaseAgent",
+        description=(
+            "Required. The class of the agent. The value is used to differentiate"
+            " among different agent classes."
+        ),
+    )
 
-  name: str = Field(description='Required. The name of the agent.')
+    name: str = Field(description="Required. The name of the agent.")
 
-  description: str = Field(
-      default='', description='Optional. The description of the agent.'
-  )
+    description: str = Field(
+        default="", description="Optional. The description of the agent."
+    )
 
-  sub_agents: Optional[List[AgentRefConfig]] = Field(
-      default=None, description='Optional. The sub-agents of the agent.'
-  )
+    sub_agents: Optional[List[AgentRefConfig]] = Field(
+        default=None, description="Optional. The sub-agents of the agent."
+    )
 
-  before_agent_callbacks: Optional[List[CodeConfig]] = Field(
-      default=None,
-      description="""\
+    before_agent_callbacks: Optional[List[CodeConfig]] = Field(
+        default=None,
+        description="""\
 Optional. The before_agent_callbacks of the agent.
 
 Example:
@@ -73,9 +73,9 @@ Example:
   before_agent_callbacks:
     - name: my_library.security_callbacks.before_agent_callback
   ```""",
-  )
+    )
 
-  after_agent_callbacks: Optional[List[CodeConfig]] = Field(
-      default=None,
-      description='Optional. The after_agent_callbacks of the agent.',
-  )
+    after_agent_callbacks: Optional[List[CodeConfig]] = Field(
+        default=None,
+        description="Optional. The after_agent_callbacks of the agent.",
+    )

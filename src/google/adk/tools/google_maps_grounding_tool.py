@@ -25,44 +25,42 @@ from .base_tool import BaseTool
 from .tool_context import ToolContext
 
 if TYPE_CHECKING:
-  from ..models import LlmRequest
+    from ..models import LlmRequest
 
 
 class GoogleMapsGroundingTool(BaseTool):
-  """A built-in tool that is automatically invoked by Gemini 2 models to ground query results with Google Maps.
+    """A built-in tool that is automatically invoked by Gemini 2 models to ground query results with Google Maps.
 
-  This tool operates internally within the model and does not require or perform
-  local code execution.
+    This tool operates internally within the model and does not require or perform
+    local code execution.
 
-  Only available for use with the VertexAI Gemini API (e.g.
-  GOOGLE_GENAI_USE_VERTEXAI=TRUE)
-  """
+    Only available for use with the VertexAI Gemini API (e.g.
+    GOOGLE_GENAI_USE_VERTEXAI=TRUE)
+    """
 
-  def __init__(self):
-    # Name and description are not used because this is a model built-in tool.
-    super().__init__(name='google_maps', description='google_maps')
+    def __init__(self):
+        # Name and description are not used because this is a model built-in tool.
+        super().__init__(name="google_maps", description="google_maps")
 
-  @override
-  async def process_llm_request(
-      self,
-      *,
-      tool_context: ToolContext,
-      llm_request: LlmRequest,
-  ) -> None:
-    llm_request.config = llm_request.config or types.GenerateContentConfig()
-    llm_request.config.tools = llm_request.config.tools or []
-    if is_gemini_1_model(llm_request.model):
-      raise ValueError(
-          'Google Maps grounding tool cannot be used with Gemini 1.x models.'
-      )
-    elif is_gemini_model(llm_request.model):
-      llm_request.config.tools.append(
-          types.Tool(google_maps=types.GoogleMaps())
-      )
-    else:
-      raise ValueError(
-          f'Google maps tool is not supported for model {llm_request.model}'
-      )
+    @override
+    async def process_llm_request(
+        self,
+        *,
+        tool_context: ToolContext,
+        llm_request: LlmRequest,
+    ) -> None:
+        llm_request.config = llm_request.config or types.GenerateContentConfig()
+        llm_request.config.tools = llm_request.config.tools or []
+        if is_gemini_1_model(llm_request.model):
+            raise ValueError(
+                "Google Maps grounding tool cannot be used with Gemini 1.x models."
+            )
+        elif is_gemini_model(llm_request.model):
+            llm_request.config.tools.append(types.Tool(google_maps=types.GoogleMaps()))
+        else:
+            raise ValueError(
+                f"Google maps tool is not supported for model {llm_request.model}"
+            )
 
 
 google_maps_grounding = GoogleMapsGroundingTool()

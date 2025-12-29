@@ -26,20 +26,20 @@ PUBSUB_DEFAULT_SCOPE = ("https://www.googleapis.com/auth/pubsub",)
 
 @experimental(FeatureName.GOOGLE_CREDENTIALS_CONFIG)
 class PubSubCredentialsConfig(BaseGoogleCredentialsConfig):
-  """Pub/Sub Credentials Configuration for Google API tools (Experimental).
+    """Pub/Sub Credentials Configuration for Google API tools (Experimental).
 
-  Please do not use this in production, as it may be deprecated later.
-  """
+    Please do not use this in production, as it may be deprecated later.
+    """
 
-  @model_validator(mode="after")
-  def __post_init__(self) -> PubSubCredentialsConfig:
-    """Populate default scope if scopes is None."""
-    super().__post_init__()
+    @model_validator(mode="after")
+    def __post_init__(self) -> PubSubCredentialsConfig:
+        """Populate default scope if scopes is None."""
+        super().__post_init__()
 
-    if not self.scopes:
-      self.scopes = PUBSUB_DEFAULT_SCOPE
+        if not self.scopes:
+            self.scopes = PUBSUB_DEFAULT_SCOPE
 
-    # Set the token cache key
-    self._token_cache_key = PUBSUB_TOKEN_CACHE_KEY
+        # Set the token cache key
+        self._token_cache_key = PUBSUB_TOKEN_CACHE_KEY
 
-    return self
+        return self

@@ -15,5 +15,5 @@
 from . import auth_helpers
 
 __all__ = [
-    'auth_helpers',
+    "auth_helpers",
 ]

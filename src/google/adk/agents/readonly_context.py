@@ -20,52 +20,52 @@ from typing import Optional
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-  from google.genai import types
+    from google.genai import types
 
-  from ..sessions.session import Session
-  from .invocation_context import InvocationContext
-  from .run_config import RunConfig
+    from ..sessions.session import Session
+    from .invocation_context import InvocationContext
+    from .run_config import RunConfig
 
 
 class ReadonlyContext:
 
-  def __init__(
-      self,
-      invocation_context: InvocationContext,
-  ) -> None:
-    self._invocation_context = invocation_context
+    def __init__(
+        self,
+        invocation_context: InvocationContext,
+    ) -> None:
+        self._invocation_context = invocation_context
 
-  @property
-  def user_content(self) -> Optional[types.Content]:
-    """The user content that started this invocation. READONLY field."""
-    return self._invocation_context.user_content
+    @property
+    def user_content(self) -> Optional[types.Content]:
+        """The user content that started this invocation. READONLY field."""
+        return self._invocation_context.user_content
 
-  @property
-  def invocation_id(self) -> str:
-    """The current invocation id."""
-    return self._invocation_context.invocation_id
+    @property
+    def invocation_id(self) -> str:
+        """The current invocation id."""
+        return self._invocation_context.invocation_id
 
-  @property
-  def agent_name(self) -> str:
-    """The name of the agent that is currently running."""
-    return self._invocation_context.agent.name
+    @property
+    def agent_name(self) -> str:
+        """The name of the agent that is currently running."""
+        return self._invocation_context.agent.name
 
-  @property
-  def state(self) -> MappingProxyType[str, Any]:
-    """The state of the current session. READONLY field."""
-    return MappingProxyType(self._invocation_context.session.state)
+    @property
+    def state(self) -> MappingProxyType[str, Any]:
+        """The state of the current session. READONLY field."""
+        return MappingProxyType(self._invocation_context.session.state)
 
-  @property
-  def session(self) -> Session:
-    """The current session for this invocation."""
-    return self._invocation_context.session
+    @property
+    def session(self) -> Session:
+        """The current session for this invocation."""
+        return self._invocation_context.session
 
-  @property
-  def user_id(self) -> str:
-    """The id of the user. READONLY field."""
-    return self._invocation_context.user_id
+    @property
+    def user_id(self) -> str:
+        """The id of the user. READONLY field."""
+        return self._invocation_context.user_id
 
-  @property
-  def run_config(self) -> Optional[RunConfig]:
-    """The run config of the current invocation. READONLY field."""
-    return self._invocation_context.run_config
+    @property
+    def run_config(self) -> Optional[RunConfig]:
+        """The run config of the current invocation. READONLY field."""
+        return self._invocation_context.run_config

@@ -26,50 +26,50 @@ from ..auth_tool import AuthConfig
 
 @experimental
 class BaseCredentialService(ABC):
-  """Abstract class for Service that loads / saves tool credentials from / to
-  the backend credential store."""
+    """Abstract class for Service that loads / saves tool credentials from / to
+    the backend credential store."""
 
-  @abstractmethod
-  async def load_credential(
-      self,
-      auth_config: AuthConfig,
-      callback_context: CallbackContext,
-  ) -> Optional[AuthCredential]:
-    """
-    Loads the credential by auth config and current callback context from the
-    backend credential store.
+    @abstractmethod
+    async def load_credential(
+        self,
+        auth_config: AuthConfig,
+        callback_context: CallbackContext,
+    ) -> Optional[AuthCredential]:
+        """
+        Loads the credential by auth config and current callback context from the
+        backend credential store.
 
-    Args:
-        auth_config: The auth config which contains the auth scheme and auth
-        credential information. auth_config.get_credential_key will be used to
-        build the key to load the credential.
+        Args:
+            auth_config: The auth config which contains the auth scheme and auth
+            credential information. auth_config.get_credential_key will be used to
+            build the key to load the credential.
 
-        callback_context: The context of the current invocation when the tool is
-        trying to load the credential.
+            callback_context: The context of the current invocation when the tool is
+            trying to load the credential.
 
-    Returns:
-        Optional[AuthCredential]: the credential saved in the store.
+        Returns:
+            Optional[AuthCredential]: the credential saved in the store.
 
-    """
+        """
 
-  @abstractmethod
-  async def save_credential(
-      self,
-      auth_config: AuthConfig,
-      callback_context: CallbackContext,
-  ) -> None:
-    """
-    Saves the exchanged_auth_credential in auth config to the backend credential
-    store.
+    @abstractmethod
+    async def save_credential(
+        self,
+        auth_config: AuthConfig,
+        callback_context: CallbackContext,
+    ) -> None:
+        """
+        Saves the exchanged_auth_credential in auth config to the backend credential
+        store.
 
-    Args:
-        auth_config: The auth config which contains the auth scheme and auth
-        credential information. auth_config.get_credential_key will be used to
-        build the key to save the credential.
+        Args:
+            auth_config: The auth config which contains the auth scheme and auth
+            credential information. auth_config.get_credential_key will be used to
+            build the key to save the credential.
 
-        callback_context: The context of the current invocation when the tool is
-        trying to save the credential.
+            callback_context: The context of the current invocation when the tool is
+            trying to save the credential.
 
-    Returns:
-        None
-    """
+        Returns:
+            None
+        """

@@ -27,17 +27,17 @@ from .base_agent_config import BaseAgentConfig
 
 @experimental
 class LoopAgentConfig(BaseAgentConfig):
-  """The config for the YAML schema of a LoopAgent."""
+    """The config for the YAML schema of a LoopAgent."""
 
-  model_config = ConfigDict(
-      extra='forbid',
-  )
+    model_config = ConfigDict(
+        extra="forbid",
+    )
 
-  agent_class: str = Field(
-      default='LoopAgent',
-      description='The value is used to uniquely identify the LoopAgent class.',
-  )
+    agent_class: str = Field(
+        default="LoopAgent",
+        description="The value is used to uniquely identify the LoopAgent class.",
+    )
 
-  max_iterations: Optional[int] = Field(
-      default=None, description='Optional. LoopAgent.max_iterations.'
-  )
+    max_iterations: Optional[int] = Field(
+        default=None, description="Optional. LoopAgent.max_iterations."
+    )

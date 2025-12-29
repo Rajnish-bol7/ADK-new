@@ -24,69 +24,65 @@ from .base_tool import BaseTool
 from .tool_context import ToolContext
 
 if TYPE_CHECKING:
-  from ..models import LlmRequest
+    from ..models import LlmRequest
 
-logger = logging.getLogger('google_adk.' + __name__)
+logger = logging.getLogger("google_adk." + __name__)
 
 
 class PreloadMemoryTool(BaseTool):
-  """A tool that preloads the memory for the current user.
+    """A tool that preloads the memory for the current user.
 
-  This tool will be automatically executed for each llm_request, and it won't be
-  called by the model.
+    This tool will be automatically executed for each llm_request, and it won't be
+    called by the model.
 
-  NOTE: Currently this tool only uses text part from the memory.
-  """
+    NOTE: Currently this tool only uses text part from the memory.
+    """
 
-  def __init__(self):
-    # Name and description are not used because this tool only
-    # changes llm_request.
-    super().__init__(name='preload_memory', description='preload_memory')
+    def __init__(self):
+        # Name and description are not used because this tool only
+        # changes llm_request.
+        super().__init__(name="preload_memory", description="preload_memory")
 
-  @override
-  async def process_llm_request(
-      self,
-      *,
-      tool_context: ToolContext,
-      llm_request: LlmRequest,
-  ) -> None:
-    user_content = tool_context.user_content
-    if (
-        not user_content
-        or not user_content.parts
-        or not user_content.parts[0].text
-    ):
-      return
+    @override
+    async def process_llm_request(
+        self,
+        *,
+        tool_context: ToolContext,
+        llm_request: LlmRequest,
+    ) -> None:
+        user_content = tool_context.user_content
+        if not user_content or not user_content.parts or not user_content.parts[0].text:
+            return
 
-    user_query: str = user_content.parts[0].text
-    try:
-      response = await tool_context.search_memory(user_query)
-    except Exception:
-      logging.warning('Failed to preload memory for query: %s', user_query)
-      return
+        user_query: str = user_content.parts[0].text
+        try:
+            response = await tool_context.search_memory(user_query)
+        except Exception:
+            logging.warning("Failed to preload memory for query: %s", user_query)
+            return
 
-    if not response.memories:
-      return
+        if not response.memories:
+            return
 
-    memory_text_lines = []
-    for memory in response.memories:
-      if time_str := (f'Time: {memory.timestamp}' if memory.timestamp else ''):
-        memory_text_lines.append(time_str)
-      if memory_text := _memory_entry_utils.extract_text(memory):
-        memory_text_lines.append(
-            f'{memory.author}: {memory_text}' if memory.author else memory_text
-        )
-    if not memory_text_lines:
-      return
+        memory_text_lines = []
+        for memory in response.memories:
+            if time_str := (f"Time: {memory.timestamp}" if memory.timestamp else ""):
+                memory_text_lines.append(time_str)
+            if memory_text := _memory_entry_utils.extract_text(memory):
+                memory_text_lines.append(
+                    f"{memory.author}: {memory_text}" if memory.author else memory_text
+                )
+        if not memory_text_lines:
+            return
 
-    full_memory_text = '\n'.join(memory_text_lines)
-    si = f"""The following content is from your previous conversations with the user.
+        full_memory_text = "\n".join(memory_text_lines)
+        si = f"""The following content is from your previous conversations with the user.
 They may be useful for answering the user's current query.
 <PAST_CONVERSATIONS>
 {full_memory_text}
 </PAST_CONVERSATIONS>
 """
-    llm_request.append_instructions([si])
+        llm_request.append_instructions([si])
 
 
 preload_memory_tool = PreloadMemoryTool()

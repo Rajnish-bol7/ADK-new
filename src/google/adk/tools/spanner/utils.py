@@ -39,76 +39,76 @@ def execute_sql(
     params: Optional[dict] = None,
     params_types: Optional[dict] = None,
 ) -> dict:
-  """Utility function to run a Spanner Read-Only query in the spanner database and return the result.
+    """Utility function to run a Spanner Read-Only query in the spanner database and return the result.
 
-  Args:
-      project_id (str): The GCP project id in which the spanner database
-        resides.
-      instance_id (str): The instance id of the spanner database.
-      database_id (str): The database id of the spanner database.
-      query (str): The Spanner SQL query to be executed.
-      credentials (Credentials): The credentials to use for the request.
-      settings (SpannerToolSettings): The settings for the tool.
-      tool_context (ToolContext): The context for the tool.
-      params (dict): values for parameter replacement.  Keys must match the
-        names used in ``query``.
-      params_types (dict): maps explicit types for one or more param values.
+    Args:
+        project_id (str): The GCP project id in which the spanner database
+          resides.
+        instance_id (str): The instance id of the spanner database.
+        database_id (str): The database id of the spanner database.
+        query (str): The Spanner SQL query to be executed.
+        credentials (Credentials): The credentials to use for the request.
+        settings (SpannerToolSettings): The settings for the tool.
+        tool_context (ToolContext): The context for the tool.
+        params (dict): values for parameter replacement.  Keys must match the
+          names used in ``query``.
+        params_types (dict): maps explicit types for one or more param values.
 
-  Returns:
-      dict: Dictionary with the result of the query.
-            If the result contains the key "result_is_likely_truncated" with
-            value True, it means that there may be additional rows matching the
-            query not returned in the result.
-  """
+    Returns:
+        dict: Dictionary with the result of the query.
+              If the result contains the key "result_is_likely_truncated" with
+              value True, it means that there may be additional rows matching the
+              query not returned in the result.
+    """
 
-  try:
-    # Get Spanner client
-    spanner_client = client.get_spanner_client(
-        project=project_id, credentials=credentials
-    )
-    instance = spanner_client.instance(instance_id)
-    database = instance.database(database_id)
+    try:
+        # Get Spanner client
+        spanner_client = client.get_spanner_client(
+            project=project_id, credentials=credentials
+        )
+        instance = spanner_client.instance(instance_id)
+        database = instance.database(database_id)
 
-    if database.database_dialect == DatabaseDialect.POSTGRESQL:
-      return {
-          "status": "ERROR",
-          "error_details": "PostgreSQL dialect is not supported.",
-      }
+        if database.database_dialect == DatabaseDialect.POSTGRESQL:
+            return {
+                "status": "ERROR",
+                "error_details": "PostgreSQL dialect is not supported.",
+            }
 
-    with database.snapshot() as snapshot:
-      result_set = snapshot.execute_sql(
-          sql=query, params=params, param_types=params_types
-      )
-      rows = []
-      counter = (
-          settings.max_executed_query_result_rows
-          if settings and settings.max_executed_query_result_rows > 0
-          else DEFAULT_MAX_EXECUTED_QUERY_RESULT_ROWS
-      )
-      if settings and settings.query_result_mode is QueryResultMode.DICT_LIST:
-        result_set = result_set.to_dict_list()
+        with database.snapshot() as snapshot:
+            result_set = snapshot.execute_sql(
+                sql=query, params=params, param_types=params_types
+            )
+            rows = []
+            counter = (
+                settings.max_executed_query_result_rows
+                if settings and settings.max_executed_query_result_rows > 0
+                else DEFAULT_MAX_EXECUTED_QUERY_RESULT_ROWS
+            )
+            if settings and settings.query_result_mode is QueryResultMode.DICT_LIST:
+                result_set = result_set.to_dict_list()
 
-      for row in result_set:
-        try:
-          # if the json serialization of the row succeeds, use it as is
-          json.dumps(row)
-        except:
-          row = str(row)
+            for row in result_set:
+                try:
+                    # if the json serialization of the row succeeds, use it as is
+                    json.dumps(row)
+                except:
+                    row = str(row)
 
-        rows.append(row)
-        counter -= 1
-        if counter <= 0:
-          break
+                rows.append(row)
+                counter -= 1
+                if counter <= 0:
+                    break
 
-      result = {"status": "SUCCESS", "rows": rows}
-      if counter <= 0:
-        result["result_is_likely_truncated"] = True
-      return result
-  except Exception as ex:
-    return {
-        "status": "ERROR",
-        "error_details": str(ex),
-    }
+            result = {"status": "SUCCESS", "rows": rows}
+            if counter <= 0:
+                result["result_is_likely_truncated"] = True
+            return result
+    except Exception as ex:
+        return {
+            "status": "ERROR",
+            "error_details": str(ex),
+        }
 
 
 def embed_contents(
@@ -116,20 +116,20 @@ def embed_contents(
     contents: list[str],
     output_dimensionality: Optional[int] = None,
 ) -> list[list[float]]:
-  """Embed the given contents into list of vectors using the Vertex AI embedding model endpoint."""
-  try:
-    from google.genai import Client
-    from google.genai.types import EmbedContentConfig
+    """Embed the given contents into list of vectors using the Vertex AI embedding model endpoint."""
+    try:
+        from google.genai import Client
+        from google.genai.types import EmbedContentConfig
 
-    client = Client()
-    config = EmbedContentConfig()
-    if output_dimensionality:
-      config.output_dimensionality = output_dimensionality
-    response = client.models.embed_content(
-        model=vertex_ai_embedding_model_name,
-        contents=contents,
-        config=config,
-    )
-    return [list(e.values) for e in response.embeddings]
-  except Exception as ex:
-    raise RuntimeError(f"Failed to embed content: {ex!r}") from ex
+        client = Client()
+        config = EmbedContentConfig()
+        if output_dimensionality:
+            config.output_dimensionality = output_dimensionality
+        response = client.models.embed_content(
+            model=vertex_ai_embedding_model_name,
+            contents=contents,
+            config=config,
+        )
+        return [list(e.values) for e in response.embeddings]
+    except Exception as ex:
+        raise RuntimeError(f"Failed to embed content: {ex!r}") from ex

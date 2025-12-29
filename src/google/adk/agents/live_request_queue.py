@@ -24,57 +24,57 @@ from pydantic import field_validator
 
 
 class LiveRequest(BaseModel):
-  """Request send to live agents."""
+    """Request send to live agents."""
 
-  model_config = ConfigDict(ser_json_bytes='base64', val_json_bytes='base64')
-  """The pydantic model config."""
+    model_config = ConfigDict(ser_json_bytes="base64", val_json_bytes="base64")
+    """The pydantic model config."""
 
-  content: Optional[types.Content] = None
-  """If set, send the content to the model in turn-by-turn mode."""
-  blob: Optional[types.Blob] = None
-  """If set, send the blob to the model in realtime mode."""
-  activity_start: Optional[types.ActivityStart] = None
-  """If set, signal the start of user activity to the model."""
-  activity_end: Optional[types.ActivityEnd] = None
-  """If set, signal the end of user activity to the model."""
-  close: bool = False
-  """If set, close the queue. queue.shutdown() is only supported in Python 3.13+."""
+    content: Optional[types.Content] = None
+    """If set, send the content to the model in turn-by-turn mode."""
+    blob: Optional[types.Blob] = None
+    """If set, send the blob to the model in realtime mode."""
+    activity_start: Optional[types.ActivityStart] = None
+    """If set, signal the start of user activity to the model."""
+    activity_end: Optional[types.ActivityEnd] = None
+    """If set, signal the end of user activity to the model."""
+    close: bool = False
+    """If set, close the queue. queue.shutdown() is only supported in Python 3.13+."""
 
 
 class LiveRequestQueue:
-  """Queue used to send LiveRequest in a live(bidirectional streaming) way."""
+    """Queue used to send LiveRequest in a live(bidirectional streaming) way."""
 
-  def __init__(self):
-    # Ensure there's an event loop available in this thread
-    try:
-      asyncio.get_running_loop()
-    except RuntimeError:
-      # No running loop, create one
-      loop = asyncio.new_event_loop()
-      asyncio.set_event_loop(loop)
+    def __init__(self):
+        # Ensure there's an event loop available in this thread
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            # No running loop, create one
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
 
-    # Now create the queue (it will use the event loop we just ensured exists)
-    self._queue = asyncio.Queue()
+        # Now create the queue (it will use the event loop we just ensured exists)
+        self._queue = asyncio.Queue()
 
-  def close(self):
-    self._queue.put_nowait(LiveRequest(close=True))
+    def close(self):
+        self._queue.put_nowait(LiveRequest(close=True))
 
-  def send_content(self, content: types.Content):
-    self._queue.put_nowait(LiveRequest(content=content))
+    def send_content(self, content: types.Content):
+        self._queue.put_nowait(LiveRequest(content=content))
 
-  def send_realtime(self, blob: types.Blob):
-    self._queue.put_nowait(LiveRequest(blob=blob))
+    def send_realtime(self, blob: types.Blob):
+        self._queue.put_nowait(LiveRequest(blob=blob))
 
-  def send_activity_start(self):
-    """Sends an activity start signal to mark the beginning of user input."""
-    self._queue.put_nowait(LiveRequest(activity_start=types.ActivityStart()))
+    def send_activity_start(self):
+        """Sends an activity start signal to mark the beginning of user input."""
+        self._queue.put_nowait(LiveRequest(activity_start=types.ActivityStart()))
 
-  def send_activity_end(self):
-    """Sends an activity end signal to mark the end of user input."""
-    self._queue.put_nowait(LiveRequest(activity_end=types.ActivityEnd()))
+    def send_activity_end(self):
+        """Sends an activity end signal to mark the end of user input."""
+        self._queue.put_nowait(LiveRequest(activity_end=types.ActivityEnd()))
 
-  def send(self, req: LiveRequest):
-    self._queue.put_nowait(req)
+    def send(self, req: LiveRequest):
+        self._queue.put_nowait(req)
 
-  async def get(self) -> LiveRequest:
-    return await self._queue.get()
+    async def get(self) -> LiveRequest:
+        return await self._queue.get()

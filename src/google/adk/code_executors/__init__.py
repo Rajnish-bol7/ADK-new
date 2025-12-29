@@ -21,59 +21,61 @@ from .built_in_code_executor import BuiltInCodeExecutor
 from .code_executor_context import CodeExecutorContext
 from .unsafe_local_code_executor import UnsafeLocalCodeExecutor
 
-logger = logging.getLogger('google_adk.' + __name__)
+logger = logging.getLogger("google_adk." + __name__)
 
 __all__ = [
-    'BaseCodeExecutor',
-    'BuiltInCodeExecutor',
-    'CodeExecutorContext',
-    'UnsafeLocalCodeExecutor',
-    'VertexAiCodeExecutor',
-    'ContainerCodeExecutor',
-    'GkeCodeExecutor',
-    'AgentEngineSandboxCodeExecutor',
+    "BaseCodeExecutor",
+    "BuiltInCodeExecutor",
+    "CodeExecutorContext",
+    "UnsafeLocalCodeExecutor",
+    "VertexAiCodeExecutor",
+    "ContainerCodeExecutor",
+    "GkeCodeExecutor",
+    "AgentEngineSandboxCodeExecutor",
 ]
 
 
 def __getattr__(name: str):
-  if name == 'VertexAiCodeExecutor':
-    try:
-      from .vertex_ai_code_executor import VertexAiCodeExecutor
+    if name == "VertexAiCodeExecutor":
+        try:
+            from .vertex_ai_code_executor import VertexAiCodeExecutor
 
-      return VertexAiCodeExecutor
-    except ImportError as e:
-      raise ImportError(
-          'VertexAiCodeExecutor requires additional dependencies. '
-          'Please install with: pip install "google-adk[extensions]"'
-      ) from e
-  elif name == 'ContainerCodeExecutor':
-    try:
-      from .container_code_executor import ContainerCodeExecutor
+            return VertexAiCodeExecutor
+        except ImportError as e:
+            raise ImportError(
+                "VertexAiCodeExecutor requires additional dependencies. "
+                'Please install with: pip install "google-adk[extensions]"'
+            ) from e
+    elif name == "ContainerCodeExecutor":
+        try:
+            from .container_code_executor import ContainerCodeExecutor
 
-      return ContainerCodeExecutor
-    except ImportError as e:
-      raise ImportError(
-          'ContainerCodeExecutor requires additional dependencies. '
-          'Please install with: pip install "google-adk[extensions]"'
-      ) from e
-  elif name == 'GkeCodeExecutor':
-    try:
-      from .gke_code_executor import GkeCodeExecutor
+            return ContainerCodeExecutor
+        except ImportError as e:
+            raise ImportError(
+                "ContainerCodeExecutor requires additional dependencies. "
+                'Please install with: pip install "google-adk[extensions]"'
+            ) from e
+    elif name == "GkeCodeExecutor":
+        try:
+            from .gke_code_executor import GkeCodeExecutor
 
-      return GkeCodeExecutor
-    except ImportError as e:
-      raise ImportError(
-          'GkeCodeExecutor requires additional dependencies. '
-          'Please install with: pip install "google-adk[extensions]"'
-      ) from e
-  elif name == 'AgentEngineSandboxCodeExecutor':
-    try:
-      from .agent_engine_sandbox_code_executor import AgentEngineSandboxCodeExecutor
+            return GkeCodeExecutor
+        except ImportError as e:
+            raise ImportError(
+                "GkeCodeExecutor requires additional dependencies. "
+                'Please install with: pip install "google-adk[extensions]"'
+            ) from e
+    elif name == "AgentEngineSandboxCodeExecutor":
+        try:
+            from .agent_engine_sandbox_code_executor import (
+                AgentEngineSandboxCodeExecutor,
+            )
 
-      return AgentEngineSandboxCodeExecutor
-    except ImportError as e:
-      raise ImportError(
-          'AgentEngineSandboxCodeExecutor requires additional dependencies. '
-          'Please install with: pip install "google-adk[extensions]"'
-      ) from e
-  raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
+            return AgentEngineSandboxCodeExecutor
+        except ImportError as e:
+            raise ImportError(
+                "AgentEngineSandboxCodeExecutor requires additional dependencies. "
+                'Please install with: pip install "google-adk[extensions]"'
+            ) from e
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")

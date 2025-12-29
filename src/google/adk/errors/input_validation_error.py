@@ -16,13 +16,13 @@ from __future__ import annotations
 
 
 class InputValidationError(ValueError):
-  """Represents an error raised when user input fails validation."""
+    """Represents an error raised when user input fails validation."""
 
-  def __init__(self, message="Invalid input."):
-    """Initializes the InputValidationError exception.
+    def __init__(self, message="Invalid input."):
+        """Initializes the InputValidationError exception.
 
-    Args:
-        message (str): A message describing why the input is invalid.
-    """
-    self.message = message
-    super().__init__(self.message)
+        Args:
+            message (str): A message describing why the input is invalid.
+        """
+        self.message = message
+        super().__init__(self.message)

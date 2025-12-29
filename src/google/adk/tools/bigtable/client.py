@@ -25,32 +25,32 @@ USER_AGENT = f"adk-bigtable-tool google-adk/{version.__version__}"
 
 
 def _get_client_info() -> google.api_core.client_info.ClientInfo:
-  """Get client info."""
-  return google.api_core.client_info.ClientInfo(user_agent=USER_AGENT)
+    """Get client info."""
+    return google.api_core.client_info.ClientInfo(user_agent=USER_AGENT)
 
 
 def get_bigtable_data_client(
     *, project: str, credentials: Credentials
 ) -> bigtable.BigtableDataClient:
-  """Get a Bigtable client."""
+    """Get a Bigtable client."""
 
-  bigtable_data_client = data.BigtableDataClient(
-      project=project, credentials=credentials, client_info=_get_client_info()
-  )
+    bigtable_data_client = data.BigtableDataClient(
+        project=project, credentials=credentials, client_info=_get_client_info()
+    )
 
-  return bigtable_data_client
+    return bigtable_data_client
 
 
 def get_bigtable_admin_client(
     *, project: str, credentials: Credentials
 ) -> bigtable.Client:
-  """Get a Bigtable client."""
+    """Get a Bigtable client."""
 
-  bigtable_admin_client = bigtable.Client(
-      project=project,
-      admin=True,
-      credentials=credentials,
-      client_info=_get_client_info(),
-  )
+    bigtable_admin_client = bigtable.Client(
+        project=project,
+        admin=True,
+        credentials=credentials,
+        client_info=_get_client_info(),
+    )
 
-  return bigtable_admin_client
+    return bigtable_admin_client

@@ -34,73 +34,73 @@ logger = logging.getLogger("google_adk." + __name__)
 
 @experimental
 class BaseAuthenticatedTool(BaseTool):
-  """A base tool class that handles authentication before the actual tool logic
-  gets called. Functions can accept a special `credential` argument which is the
-  credential ready for use.(Experimental)
-  """
-
-  def __init__(
-      self,
-      *,
-      name,
-      description,
-      auth_config: AuthConfig = None,
-      response_for_auth_required: Optional[Union[dict[str, Any], str]] = None,
-  ):
+    """A base tool class that handles authentication before the actual tool logic
+    gets called. Functions can accept a special `credential` argument which is the
+    credential ready for use.(Experimental)
     """
-    Args:
-      name: The name of the tool.
-      description: The description of the tool.
-      auth_config: The auth configuration of the tool.
-      response_for_auth_required: The response to return when the tool is
-          requesting auth credential from the client. There could be two case,
-          the tool doesn't configure any credentials
-          (auth_config.raw_auth_credential is missing) or the credentials
-          configured is not enough to authenticate the tool (e.g. an OAuth
-          client id and client secret are configured) and needs client input
-          (e.g. client need to involve the end user in an oauth flow and get
-          back the oauth response.)
-    """
-    super().__init__(
-        name=name,
-        description=description,
-    )
 
-    if auth_config and auth_config.auth_scheme:
-      self._credentials_manager = CredentialManager(auth_config=auth_config)
-    else:
-      logger.debug(
-          "auth_config or auth_config.auth_scheme is missing, so authentication"
-          " will be skipped."
-      )
-      self._credentials_manager = None
-    self._response_for_auth_required = response_for_auth_required
+    def __init__(
+        self,
+        *,
+        name,
+        description,
+        auth_config: AuthConfig = None,
+        response_for_auth_required: Optional[Union[dict[str, Any], str]] = None,
+    ):
+        """
+        Args:
+          name: The name of the tool.
+          description: The description of the tool.
+          auth_config: The auth configuration of the tool.
+          response_for_auth_required: The response to return when the tool is
+              requesting auth credential from the client. There could be two case,
+              the tool doesn't configure any credentials
+              (auth_config.raw_auth_credential is missing) or the credentials
+              configured is not enough to authenticate the tool (e.g. an OAuth
+              client id and client secret are configured) and needs client input
+              (e.g. client need to involve the end user in an oauth flow and get
+              back the oauth response.)
+        """
+        super().__init__(
+            name=name,
+            description=description,
+        )
 
-  @override
-  async def run_async(
-      self, *, args: dict[str, Any], tool_context: ToolContext
-  ) -> Any:
-    credential = None
-    if self._credentials_manager:
-      credential = await self._credentials_manager.get_auth_credential(
-          tool_context
-      )
-      if not credential:
-        await self._credentials_manager.request_credential(tool_context)
-        return self._response_for_auth_required or "Pending User Authorization."
+        if auth_config and auth_config.auth_scheme:
+            self._credentials_manager = CredentialManager(auth_config=auth_config)
+        else:
+            logger.debug(
+                "auth_config or auth_config.auth_scheme is missing, so authentication"
+                " will be skipped."
+            )
+            self._credentials_manager = None
+        self._response_for_auth_required = response_for_auth_required
 
-    return await self._run_async_impl(
-        args=args,
-        tool_context=tool_context,
-        credential=credential,
-    )
+    @override
+    async def run_async(
+        self, *, args: dict[str, Any], tool_context: ToolContext
+    ) -> Any:
+        credential = None
+        if self._credentials_manager:
+            credential = await self._credentials_manager.get_auth_credential(
+                tool_context
+            )
+            if not credential:
+                await self._credentials_manager.request_credential(tool_context)
+                return self._response_for_auth_required or "Pending User Authorization."
 
-  @abstractmethod
-  async def _run_async_impl(
-      self,
-      *,
-      args: dict[str, Any],
-      tool_context: ToolContext,
-      credential: AuthCredential,
-  ) -> Any:
-    pass
+        return await self._run_async_impl(
+            args=args,
+            tool_context=tool_context,
+            credential=credential,
+        )
+
+    @abstractmethod
+    async def _run_async_impl(
+        self,
+        *,
+        args: dict[str, Any],
+        tool_context: ToolContext,
+        credential: AuthCredential,
+    ) -> Any:
+        pass

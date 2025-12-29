@@ -17,21 +17,21 @@ from .base_memory_service import BaseMemoryService
 from .in_memory_memory_service import InMemoryMemoryService
 from .vertex_ai_memory_bank_service import VertexAiMemoryBankService
 
-logger = logging.getLogger('google_adk.' + __name__)
+logger = logging.getLogger("google_adk." + __name__)
 
 __all__ = [
-    'BaseMemoryService',
-    'InMemoryMemoryService',
-    'VertexAiMemoryBankService',
+    "BaseMemoryService",
+    "InMemoryMemoryService",
+    "VertexAiMemoryBankService",
 ]
 
 try:
-  from .vertex_ai_rag_memory_service import VertexAiRagMemoryService
+    from .vertex_ai_rag_memory_service import VertexAiRagMemoryService
 
-  __all__.append('VertexAiRagMemoryService')
+    __all__.append("VertexAiRagMemoryService")
 except ImportError:
-  logger.debug(
-      'The Vertex SDK is not installed. If you want to use the'
-      ' VertexAiRagMemoryService please install it. If not, you can ignore this'
-      ' warning.'
-  )
+    logger.debug(
+        "The Vertex SDK is not installed. If you want to use the"
+        " VertexAiRagMemoryService please install it. If not, you can ignore this"
+        " warning."
+    )

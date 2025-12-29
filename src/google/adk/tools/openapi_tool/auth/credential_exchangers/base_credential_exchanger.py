@@ -20,34 +20,34 @@ from .....auth.auth_schemes import AuthScheme
 
 
 class AuthCredentialMissingError(Exception):
-  """Exception raised when required authentication credentials are missing."""
+    """Exception raised when required authentication credentials are missing."""
 
-  def __init__(self, message: str):
-    super().__init__(message)
-    self.message = message
+    def __init__(self, message: str):
+        super().__init__(message)
+        self.message = message
 
 
 class BaseAuthCredentialExchanger:
-  """Base class for authentication credential exchangers."""
+    """Base class for authentication credential exchangers."""
 
-  @abc.abstractmethod
-  def exchange_credential(
-      self,
-      auth_scheme: AuthScheme,
-      auth_credential: Optional[AuthCredential] = None,
-  ) -> AuthCredential:
-    """Exchanges the provided authentication credential for a usable token/credential.
+    @abc.abstractmethod
+    def exchange_credential(
+        self,
+        auth_scheme: AuthScheme,
+        auth_credential: Optional[AuthCredential] = None,
+    ) -> AuthCredential:
+        """Exchanges the provided authentication credential for a usable token/credential.
 
-    Args:
-        auth_scheme: The security scheme.
-        auth_credential: The authentication credential.
+        Args:
+            auth_scheme: The security scheme.
+            auth_credential: The authentication credential.
 
-    Returns:
-        An updated AuthCredential object containing the fetched credential.
-        For simple schemes like API key, it may return the original credential
-        if no exchange is needed.
+        Returns:
+            An updated AuthCredential object containing the fetched credential.
+            For simple schemes like API key, it may return the original credential
+            if no exchange is needed.
 
-    Raises:
-        NotImplementedError: If the method is not implemented by a subclass.
-    """
-    raise NotImplementedError("Subclasses must implement exchange_credential.")
+        Raises:
+            NotImplementedError: If the method is not implemented by a subclass.
+        """
+        raise NotImplementedError("Subclasses must implement exchange_credential.")

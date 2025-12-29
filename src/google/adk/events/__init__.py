@@ -16,6 +16,6 @@ from .event import Event
 from .event_actions import EventActions
 
 __all__ = [
-    'Event',
-    'EventActions',
+    "Event",
+    "EventActions",
 ]
