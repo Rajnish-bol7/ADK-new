@@ -841,14 +841,13 @@ def webhook_flow_config(request):
                     break
         
         # Prepare flow_json (nodes, edges, and other metadata)
+        # NOTE: Don't include id, flow_name, description in flow_json because
+        # they're stored as separate fields on the Flow model. Including them
+        # causes duplicate keyword argument errors in get_flow_schema().
         flow_json = {
             "nodes": nodes,
             "edges": flow_config.get("edges", []),
         }
-        # Include any additional fields from the original config
-        for key in ["id", "flow_name", "description"]:
-            if key in flow_config and key not in flow_json:
-                flow_json[key] = flow_config[key]
         
         # Create or update flow
         try:

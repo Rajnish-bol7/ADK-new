@@ -77,6 +77,10 @@ class Flow(models.Model):
         """Convert to FlowSchema for ADK integration."""
         from adk_integration.schema.flow_schema import FlowSchema
         
+        # Exclude fields that are already passed explicitly to avoid duplicate keyword arguments
+        flow_json_clean = {k: v for k, v in self.flow_json.items() 
+                          if k not in ["id", "flow_name", "description", "tenant_id"]}
+        
         return FlowSchema(
             tenant_id=str(self.tenant.id),
             flow_id=str(self.id),
@@ -84,7 +88,7 @@ class Flow(models.Model):
             description=self.description,
             is_active=self.is_active,
             version=self.version,
-            **self.flow_json,
+            **flow_json_clean,
         )
 
 

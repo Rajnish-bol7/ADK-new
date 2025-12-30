@@ -1199,27 +1199,34 @@
                 // Store the voice WebSocket
                 window.voiceWs = voiceWs;
                 
-                // TODO: Start audio capture and send to WebSocket
+                // Start audio capture and send to WebSocket
                 startAudioCapture();
+            };
+            
+            // Handle incoming messages from ADK
+            voiceWs.onmessage = (event) => {
+                try {
+                    // ADK sends JSON events (not binary audio)
+                    // Audio data comes embedded in the event content parts
+                    const data = JSON.parse(event.data);
+                    handleADKEvent(data);
+                } catch (error) {
+                    console.error('Error handling voice message:', error);
+                    // If parsing fails, it might be binary (though ADK shouldn't send binary this way)
+                    if (event.data instanceof Blob || event.data instanceof ArrayBuffer) {
+                        console.warn('Received unexpected binary data, ignoring');
+                    }
+                }
             };
             
             voiceWs.onerror = (error) => {
                 console.error('Voice WebSocket error:', error);
-                document.getElementById('callStatus').textContent = 'Voice calls require ASGI server';
+                document.getElementById('callStatus').textContent = 'Connection error';
                 document.getElementById('callStatus').style.color = '#ef4444';
-                
-                setTimeout(() => {
-                    document.getElementById('callStatus').textContent = 'Run: daphne config.asgi:application';
-                    document.getElementById('callStatus').style.color = '';
-                }, 2000);
-                
-                setTimeout(() => {
-                    document.getElementById('callStatus').textContent = 'Tap to start voice call';
-                    document.getElementById('callStatus').style.color = '';
-                }, 5000);
             };
             
             voiceWs.onclose = () => {
+                console.log('Voice WebSocket closed');
                 if (isCallActive) {
                     endCall();
                 }
@@ -1229,29 +1236,343 @@
         async function startAudioCapture() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
                 
-                mediaRecorder.ondataavailable = (event) => {
-                    if (event.data.size > 0 && window.voiceWs && window.voiceWs.readyState === WebSocket.OPEN && !isMuted) {
-                        window.voiceWs.send(event.data);
+                // Use Web Audio API to convert to PCM format (linear16, 16kHz, mono)
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)({
+                    sampleRate: 16000 // Gemini Live expects 16kHz
+                });
+                
+                const source = audioContext.createMediaStreamSource(stream);
+                const processor = audioContext.createScriptProcessor(4096, 1, 1); // bufferSize, inputChannels, outputChannels
+                
+                processor.onaudioprocess = (e) => {
+                    if (!window.voiceWs || window.voiceWs.readyState !== WebSocket.OPEN || isMuted) {
+                        return;
                     }
+                    
+                    // Get audio data (Float32Array)
+                    const inputData = e.inputBuffer.getChannelData(0);
+                    
+                    // Convert Float32Array to Int16Array (PCM 16-bit)
+                    const pcmData = new Int16Array(inputData.length);
+                    for (let i = 0; i < inputData.length; i++) {
+                        // Clamp values to [-1, 1] and convert to 16-bit integer
+                        const s = Math.max(-1, Math.min(1, inputData[i]));
+                        pcmData[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                    }
+                    
+                    // Send PCM data as binary
+                    window.voiceWs.send(pcmData.buffer);
                 };
                 
-                mediaRecorder.start(100); // Send chunks every 100ms
-                window.mediaRecorder = mediaRecorder;
+                source.connect(processor);
+                processor.connect(audioContext.destination);
+                
+                // Store references for cleanup
+                window.audioContext = audioContext;
+                window.audioProcessor = processor;
                 window.audioStream = stream;
                 
-                console.log('Audio capture started');
+                console.log('Audio capture started (PCM, 16kHz, mono)');
             } catch (error) {
                 console.error('Failed to capture audio:', error);
                 document.getElementById('callStatus').textContent = 'Microphone access denied';
             }
         }
         
+        function handleADKEvent(event) {
+            console.log('ADK Event received:', event);
+            
+            // Handle errors
+            if (event.errorCode || event.errorMessage) {
+                console.error('ADK Error:', event.errorCode, event.errorMessage);
+                document.getElementById('callStatus').textContent = 'Error: ' + (event.errorMessage || 'Unknown error');
+                document.getElementById('callStatus').style.color = '#ef4444';
+                return;
+            }
+            
+            // Handle input transcription (user's speech) - camelCase: inputTranscription
+            if (event.inputTranscription) {
+                const transcription = event.inputTranscription;
+                if (transcription.text) {
+                    console.log('Input transcription:', transcription.text);
+                    // Display user's transcribed speech
+                    displayCallMessage(transcription.text, 'outgoing');
+                }
+            }
+            
+            // Handle output transcription (model's speech) - camelCase: outputTranscription
+            if (event.outputTranscription) {
+                const transcription = event.outputTranscription;
+                if (transcription.text) {
+                    console.log('Output transcription:', transcription.text, transcription.isPartial ? '(partial)' : '(complete)');
+                    // Display model's transcribed speech
+                    displayCallMessage(transcription.text, transcription.isPartial ? 'typing' : 'incoming');
+                }
+            }
+            
+            // Handle content (model responses with text/audio) - camelCase: content
+            if (event.content && event.content.parts) {
+                console.log('Content parts found:', event.content.parts.length);
+                for (let i = 0; i < event.content.parts.length; i++) {
+                    const part = event.content.parts[i];
+                    console.log(`Part ${i}:`, part);
+                    
+                    // Handle text content - camelCase: text
+                    if (part.text) {
+                        console.log('Text content:', part.text);
+                        displayCallMessage(part.text, event.author === 'user' ? 'outgoing' : 'incoming');
+                    }
+                    
+                    // Handle audio content (inline data) - camelCase: inlineData, mimeType
+                    if (part.inlineData && part.inlineData.mimeType && part.inlineData.mimeType.startsWith('audio/')) {
+                        // ADK sends base64-encoded audio data
+                        handleAudioResponse({
+                            data: part.inlineData.data,
+                            mimeType: part.inlineData.mimeType
+                        });
+                    }
+                    
+                    // Handle audio file references - camelCase: fileData, fileUri
+                    if (part.fileData && part.fileData.fileUri && part.fileData.mimeType && part.fileData.mimeType.startsWith('audio/')) {
+                        console.log('Audio file reference:', part.fileData.fileUri);
+                        // Note: File URIs would need to be fetched from the server
+                    }
+                }
+            } else if (event.content) {
+                console.log('Content without parts:', event.content);
+            }
+        }
+        
+        // Global AudioContext for playing PCM audio (separate from recording context)
+        let playbackAudioContext = null;
+        let audioQueue = [];
+        let isPlayingAudio = false;
+        let nextPlayTime = 0; // For scheduling consecutive audio chunks
+        
+        function getPlaybackAudioContext() {
+            if (!playbackAudioContext) {
+                playbackAudioContext = new (window.AudioContext || window.webkitAudioContext)({
+                    sampleRate: 24000 // Match Gemini Live's sample rate
+                });
+            }
+            // Resume context if suspended (required by some browsers)
+            if (playbackAudioContext.state === 'suspended') {
+                playbackAudioContext.resume();
+            }
+            return playbackAudioContext;
+        }
+        
+        // Convert base64 to ArrayBuffer (like the reference repo: https://github.com/bhancockio/adk-voice-agent)
+        function base64ToArrayBuffer(base64) {
+            try {
+                // Handle base64/base64url string - remove data URL prefix if present
+                let base64Data = base64;
+                if (base64Data.includes(',')) {
+                    base64Data = base64Data.split(',')[1];
+                }
+                
+                // Convert base64url to base64 if needed (base64url uses - and _ instead of + and /)
+                base64Data = base64Data.replace(/-/g, '+').replace(/_/g, '/');
+                
+                // Add padding if needed
+                while (base64Data.length % 4) {
+                    base64Data += '=';
+                }
+                
+                const binaryString = window.atob(base64Data);
+                const len = binaryString.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                return bytes.buffer;
+            } catch (error) {
+                console.error('Error converting base64 to ArrayBuffer:', error);
+                throw error;
+            }
+        }
+        
+        async function playPCMAudio(audioBuffer, sampleRate = 24000) {
+            const ctx = getPlaybackAudioContext();
+            
+            try {
+                // audioBuffer is ArrayBuffer containing Int16 PCM data
+                const int16Array = new Int16Array(audioBuffer);
+                
+                // Convert Int16 PCM to Float32
+                const float32Data = new Float32Array(int16Array.length);
+                for (let i = 0; i < int16Array.length; i++) {
+                    // Convert from Int16 (-32768 to 32767) to Float32 (-1.0 to 1.0)
+                    float32Data[i] = int16Array[i] / 32768.0;
+                }
+                
+                // Create AudioBuffer
+                const buffer = ctx.createBuffer(1, float32Data.length, sampleRate);
+                buffer.getChannelData(0).set(float32Data);
+                
+                // Calculate duration for scheduling
+                const duration = buffer.duration;
+                const currentTime = ctx.currentTime;
+                const startTime = Math.max(currentTime, nextPlayTime);
+                
+                // Create BufferSource and play
+                const source = ctx.createBufferSource();
+                source.buffer = buffer;
+                source.connect(ctx.destination);
+                
+                // Schedule playback
+                source.start(startTime);
+                nextPlayTime = startTime + duration;
+                
+                // Clean up after playback completes
+                source.onended = () => {
+                    // Continue playing next chunk in queue if any
+                    if (audioQueue.length > 0) {
+                        const nextChunk = audioQueue.shift();
+                        playPCMAudio(nextChunk.buffer, nextChunk.sampleRate);
+                    } else {
+                        isPlayingAudio = false;
+                        nextPlayTime = 0; // Reset for next audio sequence
+                    }
+                };
+                
+            } catch (error) {
+                console.error('Error playing PCM audio:', error);
+                isPlayingAudio = false;
+                // Try next chunk in queue
+                if (audioQueue.length > 0) {
+                    const nextChunk = audioQueue.shift();
+                    playPCMAudio(nextChunk.buffer, nextChunk.sampleRate);
+                } else {
+                    nextPlayTime = 0;
+                }
+            }
+        }
+        
+        function handleAudioResponse(audioData) {
+            // Handle audio response from ADK
+            // ADK sends base64-encoded audio data in inlineData.data field
+            try {
+                if (audioData.data) {
+                    const base64Data = audioData.data;
+                    const mimeType = audioData.mimeType || 'audio/pcm';
+                    
+                    // Parse sample rate from mime type (e.g., audio/pcm;rate=24000)
+                    let sampleRate = 24000; // Default
+                    const rateMatch = mimeType.match(/rate=(\d+)/);
+                    if (rateMatch) {
+                        sampleRate = parseInt(rateMatch[1], 10);
+                    }
+                    
+                    if (mimeType.includes('pcm')) {
+                        // Convert base64 to ArrayBuffer (like reference repo)
+                        try {
+                            const arrayBuffer = base64ToArrayBuffer(base64Data);
+                            if (arrayBuffer && arrayBuffer.byteLength > 0) {
+                                // Queue or play the audio
+                                if (isPlayingAudio) {
+                                    audioQueue.push({ buffer: arrayBuffer, sampleRate });
+                                } else {
+                                    isPlayingAudio = true;
+                                    playPCMAudio(arrayBuffer, sampleRate);
+                                }
+                            }
+                        } catch (error) {
+                            console.error('Error converting PCM audio:', error);
+                        }
+                        return;
+                    } else {
+                        // For non-PCM formats (WAV, MP3, etc.), use standard Audio element
+                        const audioBlob = base64ToBlob(base64Data, mimeType);
+                        if (audioBlob) {
+                            const audioUrl = URL.createObjectURL(audioBlob);
+                            const audio = new Audio(audioUrl);
+                            audio.addEventListener('ended', () => {
+                                URL.revokeObjectURL(audioUrl);
+                            });
+                            audio.play().catch(err => {
+                                console.error('Error playing audio:', err);
+                                URL.revokeObjectURL(audioUrl);
+                            });
+                        }
+                    }
+                } else if (audioData instanceof Blob) {
+                    // Handle Blob directly
+                    const audioUrl = URL.createObjectURL(audioData);
+                    const audio = new Audio(audioUrl);
+                    audio.addEventListener('ended', () => {
+                        URL.revokeObjectURL(audioUrl);
+                    });
+                    audio.play().catch(err => {
+                        console.error('Error playing audio:', err);
+                        URL.revokeObjectURL(audioUrl);
+                    });
+                } else {
+                    console.error('Invalid audio data format:', audioData);
+                }
+                
+            } catch (error) {
+                console.error('Error handling audio response:', error, 'audioData:', audioData);
+            }
+        }
+        
+        
+        function base64ToBlob(base64, mimeType) {
+            try {
+                // Handle base64/base64url string - remove data URL prefix if present
+                let base64Data = base64;
+                if (base64Data.includes(',')) {
+                    base64Data = base64Data.split(',')[1];
+                }
+                
+                // Convert base64url to base64 if needed (base64url uses - and _ instead of + and /)
+                base64Data = base64Data.replace(/-/g, '+').replace(/_/g, '/');
+                
+                // Add padding if needed
+                while (base64Data.length % 4) {
+                    base64Data += '=';
+                }
+                
+                // Decode base64 to binary
+                const byteCharacters = atob(base64Data);
+                const byteArray = new Uint8Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteArray[i] = byteCharacters.charCodeAt(i);
+                }
+                
+                return new Blob([byteArray], { type: mimeType });
+            } catch (error) {
+                console.error('Error converting base64 to blob:', error, 'base64 preview:', base64 ? base64.substring(0, 50) + '...' : 'null');
+                throw error;
+            }
+        }
+        
+        function displayCallMessage(text, type) {
+            // Display message in call interface (you can customize this)
+            const messagesDiv = document.getElementById('messages');
+            if (messagesDiv) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${type}`;
+                messageDiv.innerHTML = `
+                    <div class="bubble">
+                        <p>${text}</p>
+                    </div>
+                `;
+                messagesDiv.appendChild(messageDiv);
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            }
+        }
+        
         function stopAudioCapture() {
-            if (window.mediaRecorder) {
-                window.mediaRecorder.stop();
-                window.mediaRecorder = null;
+            // Stop Web Audio API processing
+            if (window.audioProcessor) {
+                window.audioProcessor.disconnect();
+                window.audioProcessor = null;
+            }
+            if (window.audioContext) {
+                window.audioContext.close();
+                window.audioContext = null;
             }
             if (window.audioStream) {
                 window.audioStream.getTracks().forEach(track => track.stop());
