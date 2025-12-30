@@ -206,10 +206,10 @@ def flow_list(request):
         def get_flow_capabilities(flow):
             """Determine chat/call capabilities from flow JSON."""
             nodes = flow.flow_json.get("nodes", []) if flow.flow_json else []
-            has_call_trigger = any(n.get("type") == "call_start" for n in nodes)
+            has_call_trigger = any(n.get("type") == "call" for n in nodes)
             return {
                 "chat_enabled": True,  # Chat is ALWAYS enabled (default)
-                "call_enabled": has_call_trigger,  # Call only if call_start node exists
+                "call_enabled": has_call_trigger,  # Call only if call node exists
             }
         
         return JsonResponse({
@@ -821,7 +821,7 @@ def webhook_flow_config(request):
         
         # Determine trigger type from nodes
         trigger_type = "chat"  # Default
-        has_call_trigger = any(n.get("type") == "call_start" for n in nodes)
+        has_call_trigger = any(n.get("type") == "call" for n in nodes)
         has_webhook_trigger = any(n.get("type") == "webhook" for n in nodes)
         
         if has_call_trigger:

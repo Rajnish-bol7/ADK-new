@@ -174,18 +174,22 @@ class ToolBuilder:
         data: DatabaseNodeData,
     ) -> Optional[Any]:
         """
-        Create an MCP toolset for database access.
+        Create an MCP toolset for database access, or custom tool for Qdrant.
 
         Args:
             node_id: The node identifier
             data: Database node configuration
 
         Returns:
-            McpToolset instance or None if disabled
+            McpToolset instance, FunctionTool (for Qdrant), or None if disabled
         """
         if data.isDisabled:
             logger.debug(f"Database node {node_id} is disabled, skipping")
             return None
+
+        # Special handling for Qdrant - use API instead of MCP
+        if data.databaseType == "Qdrant":
+            return await self._build_qdrant_tool(node_id, data)
 
         try:
             # Import MCP tools (may not be installed)
@@ -239,6 +243,103 @@ class ToolBuilder:
         except Exception as e:
             logger.error(f"Failed to create database toolset for {node_id}: {e}")
             return None
+
+    async def _build_qdrant_tool(
+        self,
+        node_id: str,
+        data: DatabaseNodeData,
+    ) -> Optional[FunctionTool]:
+        """
+        Create a FunctionTool for Qdrant database that calls the API endpoint.
+        
+        Args:
+            node_id: The node identifier
+            data: Database node configuration (Qdrant type)
+            
+        Returns:
+            FunctionTool instance for Qdrant API calls
+        """
+        import aiohttp
+        
+        QDRANT_API_URL = "https://www.americangemexpo.com/api/response/"
+        
+        async def query_qdrant_database(
+            query: str,
+            tool_context: Any,  # ToolContext from ADK - automatically passed
+        ) -> str:
+            """Query the Qdrant vector database to search for information. Use this when you need to retrieve information from the connected Qdrant database.
+            
+            Args:
+                query: The user's query/question to search in the Qdrant database
+                tool_context: The tool context (has access to invocation_context, session, etc.)
+                
+            Returns:
+                The response from the Qdrant API
+            """
+            # Extract user info from context if available
+            invocation_context = tool_context._invocation_context
+            user_id = invocation_context.user_id if invocation_context else "anonymous"
+            session = invocation_context.session if invocation_context else None
+            
+            # Try to get phone number, sender, and name from session state
+            # session.state is a dict, so use it directly. Alternatively, use tool_context.state.to_dict()
+            # to get state with deltas. Here we use tool_context.state.to_dict() to get the full state including deltas.
+            if session and hasattr(session, 'state'):
+                # session.state is a dict, but tool_context.state is a State object with to_dict()
+                session_state = tool_context.state.to_dict()
+            else:
+                session_state = {}
+            
+            number = session_state.get("phone_number", session_state.get("number", user_id))
+            sender = session_state.get("sender_number", session_state.get("sender", user_id))
+            name = session_state.get("user_name", session_state.get("name", "User"))
+            
+            # Prepare API request payload
+            payload = {
+                "number": str(number),
+                "sender": str(sender),
+                "name": str(name),
+                "type": "text",
+                "response": query,  # The user's query
+                "platform": "Whatsapp",
+                "agent_name": "agent_1000_embeddings"  # Hardcoded as requested
+            }
+            
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(
+                        QDRANT_API_URL,
+                        json=payload,
+                        headers={"Content-Type": "application/json"},
+                        timeout=aiohttp.ClientTimeout(total=30)
+                    ) as response:
+                        if response.status == 200:
+                            result = await response.json()
+                            # Return the response - adjust based on actual API response structure
+                            # Try common response fields
+                            if isinstance(result, dict):
+                                return result.get("response", result.get("message", result.get("data", str(result))))
+                            return str(result)
+                        else:
+                            error_text = await response.text()
+                            logger.error(f"Qdrant API error {response.status}: {error_text}")
+                            return f"Error querying Qdrant database: HTTP {response.status}"
+            except aiohttp.ClientError as e:
+                logger.error(f"Qdrant API request failed: {e}", exc_info=True)
+                return f"Error connecting to Qdrant database API: {str(e)}"
+            except Exception as e:
+                logger.error(f"Failed to query Qdrant database: {e}", exc_info=True)
+                return f"Error querying Qdrant database: {str(e)}"
+        
+        # Set the function name and ensure it has a proper docstring
+        # FunctionTool extracts name from __name__ and description from __doc__
+        query_qdrant_database.__name__ = f"{node_id}_qdrant_query"
+        
+        # Create FunctionTool (it extracts name and description from the function)
+        tool = FunctionTool(func=query_qdrant_database)
+        
+        logger.info(f"Created Qdrant API tool for node {node_id}")
+        return tool
 
     async def build_mcp_tool(
         self,

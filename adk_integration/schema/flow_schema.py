@@ -30,6 +30,7 @@ class NodeType(str, Enum):
     """Types of nodes that can appear in a flow."""
 
     AGENT = "agent"
+    CALL = "call"  # Call node (voice agent node)
     CALL_START = "call_start"
     CHAT_START = "chat_start"
     DATABASE = "database"
@@ -74,6 +75,15 @@ class AgentNodeData(BaseModel):
     # - "general": Use general knowledge (ignore database restriction)
     # - "auto": Let the flow maker decide via prompt
     knowledgeSource: Literal["db_only", "db_preferred", "general", "auto"] = "auto"
+
+
+class CallNodeData(BaseModel):
+    """Data for call nodes (voice agent nodes)."""
+    
+    callAgentName: str = "Call Agent"
+    voiceModel: str = "ElevenLabs Voice"  # Ignored - always use Gemini Live for voice calls
+    callSettings: str = "Standard Settings"
+    isDisabled: bool = False
 
 
 class CallStartNodeData(BaseModel):
@@ -121,7 +131,7 @@ class DatabaseNodeData(BaseModel):
     """Data for database nodes - connects via MCP."""
 
     databaseType: Literal[
-        "MySQL", "PostgreSQL", "MongoDB", "SQLite", "Redis", "BigQuery"
+        "MySQL", "PostgreSQL", "MongoDB", "SQLite", "Redis", "BigQuery", "Qdrant"
     ]
     host: str = ""
     port: str = ""
@@ -233,6 +243,7 @@ class CodeNodeData(BaseModel):
 # Union type for all possible node data types
 NodeDataType = Union[
     AgentNodeData,
+    CallNodeData,
     CallStartNodeData,
     ChatStartNodeData,
     ChatModelNodeData,
@@ -273,6 +284,7 @@ class FlowNode(BaseModel):
 
             type_mapping = {
                 "agent": AgentNodeData,
+                "call": CallNodeData,
                 "call_start": CallStartNodeData,
                 "chat_start": ChatStartNodeData,
                 "chatmodel": ChatModelNodeData,

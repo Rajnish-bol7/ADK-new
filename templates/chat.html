@@ -917,9 +917,9 @@
 
             // Check chat/call capabilities
             // Chat is ALWAYS enabled (default)
-            // Call is only enabled if flow has call_start trigger
+            // Call is only enabled if flow has call node
             const chatEnabled = flow.chat_enabled !== false;  // Always true by default
-            const callEnabled = flow.call_enabled === true;   // Only if explicitly enabled
+            const callEnabled = flow.call_enabled === true;   // Only if call node exists
 
             // Update UI
             document.getElementById('flowInfo').style.display = 'block';

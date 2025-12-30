@@ -187,9 +187,9 @@ class FlowBuilder:
             nodes_by_type,
         )
         
-        # 4b. If this is a CALL flow, override model to Gemini Live
+        # 4b. If this is a CALL flow (has call node), override model to Gemini Live
         # (Only Gemini Live supports native audio for voice calls)
-        is_call_flow = trigger_node and trigger_node.type == NodeType.CALL_START
+        is_call_flow = NodeType.CALL in nodes_by_type
         if is_call_flow:
             self._override_models_for_call(nodes_by_type)
 
@@ -210,8 +210,8 @@ class FlowBuilder:
 
         # 7. Prepare metadata
         # Chat is ALWAYS enabled (default functionality)
-        # Call is ONLY enabled if there's a call_start trigger
-        has_call_trigger = NodeType.CALL_START in nodes_by_type
+        # Call is ONLY enabled if there's a call node
+        has_call_trigger = NodeType.CALL in nodes_by_type
         
         metadata = {
             "trigger_type": trigger_node.type.value if trigger_node else "chat",  # Default to chat
@@ -228,7 +228,7 @@ class FlowBuilder:
             "tool_count": len(tools_by_node),
             # Chat is always available, Call only if trigger exists
             "chat_enabled": True,  # Chat is ALWAYS enabled (default)
-            "call_enabled": has_call_trigger,  # Call only if call_start node exists
+            "call_enabled": has_call_trigger,  # Call only if call node exists
             "call_model": DEFAULT_CALL_MODEL if has_call_trigger else None,
         }
 
@@ -526,8 +526,8 @@ class FlowBuilder:
         Returns:
             True if the flow requires live streaming
         """
-        # Check for call_start trigger
-        if NodeType.CALL_START in nodes_by_type:
+        # Check for call node
+        if NodeType.CALL in nodes_by_type:
             return True
 
         # Check for agents using live models
