@@ -33,8 +33,11 @@ class Flow(models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True, default="")
     
-    # Flow definition (JSON from frontend)
-    flow_json = models.JSONField(default=dict)
+    # Flow definition
+    # flow_json: n8n-like format (for portability, API responses, sharing)
+    # react_flow_json: React Flow format (for UI editing, frontend compatibility)
+    flow_json = models.JSONField(default=dict)  # n8n-like format
+    react_flow_json = models.JSONField(default=dict, null=True, blank=True)  # React Flow format
     
     # Status
     is_active = models.BooleanField(default=True)
@@ -77,8 +80,21 @@ class Flow(models.Model):
         """Convert to FlowSchema for ADK integration."""
         from adk_integration.schema.flow_schema import FlowSchema
         
+        # Use react_flow_json if available (preferred for ADK integration)
+        # Otherwise, check if flow_json is n8n format and convert it
+        if self.react_flow_json:
+            # Already have React Flow format
+            flow_json_clean = self.react_flow_json
+        elif self.flow_json.get("connections"):
+            # It's n8n format, convert to React Flow
+            from adk_integration.utils.flow_transform import transform_n8n_to_react_flow
+            flow_json_clean = transform_n8n_to_react_flow(self.flow_json)
+        else:
+            # Assume it's already React Flow format (legacy)
+            flow_json_clean = self.flow_json
+        
         # Exclude fields that are already passed explicitly to avoid duplicate keyword arguments
-        flow_json_clean = {k: v for k, v in self.flow_json.items() 
+        flow_json_clean = {k: v for k, v in flow_json_clean.items() 
                           if k not in ["id", "flow_name", "description", "tenant_id"]}
         
         return FlowSchema(

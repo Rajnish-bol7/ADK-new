@@ -8,6 +8,7 @@ and executing agent conversations.
 import asyncio
 import json
 import logging
+import uuid
 from functools import wraps
 from uuid import UUID
 
@@ -24,6 +25,7 @@ from flows.models import Flow, Session, Message, FlowExecution
 
 from adk_integration.schema.flow_schema import FlowSchema
 from adk_integration.executor.flow_executor import FlowExecutor, init_executor
+from adk_integration.utils.flow_transform import transform_react_flow_to_n8n, transform_n8n_to_react_flow
 
 logger = logging.getLogger(__name__)
 
@@ -205,12 +207,25 @@ def flow_list(request):
         
         def get_flow_capabilities(flow):
             """Determine chat/call capabilities from flow JSON."""
-            nodes = flow.flow_json.get("nodes", []) if flow.flow_json else []
-            has_call_trigger = any(n.get("type") == "call" for n in nodes)
+            # Check react_flow_json first, then flow_json
+            flow_data = flow.react_flow_json if flow.react_flow_json else flow.flow_json
+            # If flow_json is n8n format, check nodes in n8n format
+            if flow_data.get("connections"):
+                # It's n8n format, check nodes array
+                nodes = flow_data.get("nodes", [])
+                # Check if any node has type containing "call"
+                has_call_trigger = any("call" in n.get("type", "").lower() for n in nodes)
+            else:
+                # React Flow format
+                nodes = flow_data.get("nodes", []) if flow_data else []
+                has_call_trigger = any(n.get("type") == "call" for n in nodes)
             return {
                 "chat_enabled": True,  # Chat is ALWAYS enabled (default)
                 "call_enabled": has_call_trigger,  # Call only if call node exists
             }
+        
+        # Check if frontend wants React Flow format
+        format_type = request.GET.get("format", "n8n")  # Default to n8n
         
         return JsonResponse({
             "flows": [
@@ -224,7 +239,11 @@ def flow_list(request):
                     "version": f.version,
                     "tenant_id": str(f.tenant.id) if f.tenant else None,
                     "tenant_name": f.tenant.name if f.tenant else None,
-                    "flow_json": f.flow_json,
+                    # Return appropriate format based on query param
+                    "flow_json": (
+                        f.react_flow_json if format_type == "react" and f.react_flow_json 
+                        else f.flow_json
+                    ),
                     "created_at": f.created_at.isoformat(),
                     "updated_at": f.updated_at.isoformat(),
                     # Chat is always enabled, Call only if trigger exists
@@ -242,12 +261,28 @@ def flow_list(request):
         try:
             data = json.loads(request.body)
             
+            react_flow_json = data.get("flow_json", {"nodes": [], "edges": []})
+            flow_name = data.get("name", "Untitled Flow")
+            
+            # Generate flow_id if not provided
+            flow_id = data.get("id") or str(uuid.uuid4())
+            
+            # Transform React Flow to n8n format
+            n8n_json = transform_react_flow_to_n8n(
+                react_flow_json=react_flow_json,
+                flow_name=flow_name,
+                flow_id=flow_id,
+                tenant_id=str(request.user.tenant.id),
+                user_id=str(request.user.id)
+            )
+            
             flow = Flow.objects.create(
                 tenant=request.user.tenant,
                 created_by=request.user,
-                name=data.get("name", "Untitled Flow"),
+                name=flow_name,
                 description=data.get("description", ""),
-                flow_json=data.get("flow_json", {"nodes": [], "connections": []}),
+                flow_json=n8n_json,  # Store n8n format
+                react_flow_json=react_flow_json,  # Store React Flow format
                 trigger_type=data.get("trigger_type", "chat"),
             )
             
@@ -260,6 +295,7 @@ def flow_list(request):
             }, status=201)
             
         except Exception as e:
+            logger.error(f"Error creating flow: {e}", exc_info=True)
             return JsonResponse({"error": str(e)}, status=400)
 
 
@@ -274,11 +310,17 @@ def flow_detail(request, flow_id: UUID):
         return JsonResponse({"error": "Flow not found"}, status=404)
     
     if request.method == "GET":
+        format_type = request.GET.get("format", "n8n")  # Default to n8n
+        
         return JsonResponse({
             "id": str(flow.id),
             "name": flow.name,
             "description": flow.description,
-            "flow_json": flow.flow_json,
+            # Return appropriate format
+            "flow_json": (
+                flow.react_flow_json if format_type == "react" and flow.react_flow_json 
+                else flow.flow_json
+            ),
             "trigger_type": flow.trigger_type,
             "is_active": flow.is_active,
             "is_published": flow.is_published,
@@ -297,7 +339,20 @@ def flow_detail(request, flow_id: UUID):
             if "description" in data:
                 flow.description = data["description"]
             if "flow_json" in data:
-                flow.flow_json = data["flow_json"]
+                # Assume incoming is React Flow format from frontend
+                react_flow_json = data["flow_json"]
+                
+                # Transform to n8n format
+                n8n_json = transform_react_flow_to_n8n(
+                    react_flow_json=react_flow_json,
+                    flow_name=flow.name,
+                    flow_id=str(flow.id),
+                    tenant_id=str(request.user.tenant.id),
+                    user_id=str(request.user.id)
+                )
+                
+                flow.flow_json = n8n_json
+                flow.react_flow_json = react_flow_json
                 flow.version += 1
             if "trigger_type" in data:
                 flow.trigger_type = data["trigger_type"]
@@ -327,6 +382,7 @@ def flow_detail(request, flow_id: UUID):
             })
             
         except Exception as e:
+            logger.error(f"Error updating flow: {e}", exc_info=True)
             return JsonResponse({"error": str(e)}, status=400)
     
     else:  # DELETE
@@ -840,14 +896,23 @@ def webhook_flow_config(request):
                     webhook_path = webhook_data.get("webhookPath", "")
                     break
         
-        # Prepare flow_json (nodes, edges, and other metadata)
-        # NOTE: Don't include id, flow_name, description in flow_json because
-        # they're stored as separate fields on the Flow model. Including them
-        # causes duplicate keyword argument errors in get_flow_schema().
-        flow_json = {
+        # Prepare React Flow format JSON (nodes, edges from frontend)
+        react_flow_json = {
             "nodes": nodes,
             "edges": flow_config.get("edges", []),
         }
+        
+        # Get user_id from flow_config or use None if not provided
+        user_id = flow_config.get("userId")
+        
+        # Transform to n8n format
+        n8n_json = transform_react_flow_to_n8n(
+            react_flow_json=react_flow_json,
+            flow_name=flow_name,
+            flow_id=str(flow_uuid),
+            tenant_id=str(tenant.id),
+            user_id=user_id
+        )
         
         # Create or update flow
         try:
@@ -857,7 +922,8 @@ def webhook_flow_config(request):
                 defaults={
                     "name": flow_name,
                     "description": flow_config.get("description", ""),
-                    "flow_json": flow_json,
+                    "flow_json": n8n_json,  # Store n8n format
+                    "react_flow_json": react_flow_json,  # Store React Flow format
                     "trigger_type": trigger_type,
                     "webhook_path": webhook_path,
                     "is_active": True,
@@ -871,7 +937,7 @@ def webhook_flow_config(request):
             else:
                 # Increment version on update
                 flow.version += 1
-                flow.save(update_fields=["version", "name", "description", "flow_json", "trigger_type", "webhook_path", "is_active", "is_published", "updated_at"])
+                flow.save(update_fields=["version", "name", "description", "flow_json", "react_flow_json", "trigger_type", "webhook_path", "is_active", "is_published", "updated_at"])
                 logger.info(f"[WEBHOOK] Updated existing flow: {flow_name} (ID: {flow.id}, version: {flow.version})")
                 action = "updated"
             

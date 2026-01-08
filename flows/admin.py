@@ -2,8 +2,40 @@
 Admin configuration for flow models.
 """
 
+import json
+from django import forms
 from django.contrib import admin
 from .models import Flow, FlowVersion, Session, Message, FlowExecution
+
+
+class PrettyJSONWidget(forms.Textarea):
+    """Custom widget to display JSON in a formatted way."""
+    
+    def render(self, name, value, attrs=None, renderer=None):
+        if value is None:
+            value = "{}"
+        
+        # If it's a dict/list, format it
+        if isinstance(value, (dict, list)):
+            formatted_json = json.dumps(value, indent=2, ensure_ascii=False)
+        else:
+            # Try to parse and format if it's a string
+            try:
+                parsed = json.loads(value) if isinstance(value, str) else value
+                formatted_json = json.dumps(parsed, indent=2, ensure_ascii=False)
+            except (TypeError, ValueError):
+                formatted_json = str(value) if value else "{}"
+        
+        # Create a styled textarea with formatted JSON
+        attrs = attrs or {}
+        attrs.update({
+            'rows': 30,
+            'cols': 120,
+            'style': 'font-family: monospace; font-size: 12px; white-space: pre; overflow-x: auto;',
+            'readonly': True,
+        })
+        
+        return super().render(name, formatted_json, attrs, renderer)
 
 
 @admin.register(Flow)
@@ -13,13 +45,26 @@ class FlowAdmin(admin.ModelAdmin):
     search_fields = ["name", "description"]
     readonly_fields = ["id", "created_at", "updated_at", "published_at"]
     
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        # Use PrettyJSONWidget for JSON fields
+        form.base_fields['flow_json'].widget = PrettyJSONWidget()
+        form.base_fields['react_flow_json'].widget = PrettyJSONWidget()
+        return form
+    
     fieldsets = (
         (None, {
             "fields": ("id", "tenant", "created_by", "name", "description")
         }),
-        ("Flow Definition", {
+        ("Flow Definition (n8n format - for sharing/portability)", {
             "fields": ("flow_json",),
             "classes": ("collapse",),
+            "description": "This is the n8n-like format, suitable for sharing and portability. This is what gets exported/shared with partners.",
+        }),
+        ("Flow Definition (React Flow format - for UI editing)", {
+            "fields": ("react_flow_json",),
+            "classes": ("collapse",),
+            "description": "This is the original React Flow format used by the frontend UI for editing.",
         }),
         ("Settings", {
             "fields": ("trigger_type", "webhook_path", "is_active", "is_published", "version"),
