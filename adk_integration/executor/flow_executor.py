@@ -296,10 +296,30 @@ class FlowExecutor:
             max_size=cache_max_size,
             ttl_seconds=cache_ttl_seconds,
         )
+        # Cache session services per tenant to ensure sessions are shared
+        self._session_service_cache: Dict[str, Any] = {}
 
     def _default_session_factory(self, tenant_id: str) -> InMemorySessionService:
         """Default session service factory using in-memory storage."""
         return InMemorySessionService()
+
+    def _get_session_service(self, tenant_id: str) -> Any:
+        """
+        Get or create a session service for a tenant (cached).
+        
+        This ensures that all runners for the same tenant share the same
+        session service instance, allowing sessions to be properly shared
+        across different flow executions.
+        
+        Args:
+            tenant_id: Tenant identifier
+            
+        Returns:
+            Session service instance for the tenant
+        """
+        if tenant_id not in self._session_service_cache:
+            self._session_service_cache[tenant_id] = self.session_service_factory(tenant_id)
+        return self._session_service_cache[tenant_id]
 
     async def run_flow(
         self,
@@ -343,8 +363,8 @@ class FlowExecutor:
         if not api_keys:
             raise ValueError(f"No API keys found for tenant: {tenant_id}")
 
-        # Get session service for this tenant
-        session_service = self.session_service_factory(tenant_id)
+        # Get session service for this tenant (cached to ensure session sharing)
+        session_service = self._get_session_service(tenant_id)
 
         # Get or create runner
         runner, build_result = await self.runner_cache.get_or_create(
@@ -460,7 +480,8 @@ class FlowExecutor:
 
         # Get API keys
         api_keys = await self.get_api_keys(tenant_id)
-        session_service = self.session_service_factory(tenant_id)
+        # Get session service for this tenant (cached to ensure session sharing)
+        session_service = self._get_session_service(tenant_id)
 
         # Get runner
         runner, build_result = await self.runner_cache.get_or_create(
