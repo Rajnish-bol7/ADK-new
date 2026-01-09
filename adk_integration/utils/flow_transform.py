@@ -141,31 +141,10 @@ def transform_react_flow_to_n8n(
             if key not in excluded_params:
                 n8n_node["parameters"][key] = value
         
-        # Handle credentials (API keys) - add to parameters instead of credentials section
+        # Handle credentials (API keys) - store directly in parameters
         if "apiKey" in node_data and node_data["apiKey"]:
-            # Reference credentials instead of storing directly
-            credential_name = f"{node_name} API Key"
-            credential_id = f"tenant-{tenant_id}-credential" if tenant_id else "credential-id"
-            
-            # Determine credential type based on node type
-            if node["type"] == "chatmodel":
-                provider = node_data.get("modelProvider", "openai")
-                if provider == "openai":
-                    credential_type = "openAiApi"
-                elif provider == "anthropic":
-                    credential_type = "anthropicApi"
-                elif provider == "google":
-                    credential_type = "googlePalmApi"
-                else:
-                    credential_type = "apiKey"
-            else:
-                credential_type = "apiKey"
-            
-            # Add credential info to parameters instead of credentials section
-            n8n_node["parameters"][credential_type] = {
-                "id": credential_id,
-                "name": credential_name
-            }
+            # Simply store the API key directly in parameters
+            n8n_node["parameters"]["apiKey"] = node_data["apiKey"]
         
         n8n_nodes.append(n8n_node)
     
