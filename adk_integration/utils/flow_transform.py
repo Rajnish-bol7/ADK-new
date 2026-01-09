@@ -67,20 +67,68 @@ def transform_react_flow_to_n8n(
     for node in nodes:
         node_data = node.get("data", {})
         
-        # Extract node name from data
+        # Extract node name from data - use user-provided name or generate based on type
         node_name = (
             node_data.get("agentName") or
             node_data.get("modelName") or
             node_data.get("callAgentName") or
             node_data.get("toolName") or
-            node["id"]  # Fallback to ID
+            None  # Don't fallback to ID yet
         )
+        
+        # If no user-provided name, generate one based on type and type-specific field
+        if not node_name:
+            node_type = node["type"]
+            
+            # Generate name based on node type and its specific field
+            if node_type == "agent":
+                agent_type = node_data.get("agentType", "agent")
+                node_name = f"{node_type}.{agent_type}"
+            elif node_type == "call":
+                # For call nodes, use "call" if no callAgentName provided
+                node_name = "call"
+            elif node_type == "chatmodel":
+                provider = node_data.get("modelProvider", "openai")
+                node_name = f"{node_type}.{provider}"
+            elif node_type == "database":
+                db_type = node_data.get("databaseType", "Database")
+                node_name = f"{node_type}.{db_type}"
+            elif node_type == "tool":
+                tool_type = node_data.get("toolType", "tool")
+                node_name = f"{node_type}.{tool_type}"
+            elif node_type == "condition":
+                condition_type = node_data.get("conditionType", "if_else")
+                node_name = f"{node_type}.{condition_type}"
+            elif node_type == "loop":
+                loop_type = node_data.get("loopType", "count")
+                node_name = f"{node_type}.{loop_type}"
+            elif node_type == "mcp":
+                platform = node_data.get("platform") or node_data.get("mcpServerUrl")
+                if platform:
+                    node_name = f"{node_type}.{platform}"
+                else:
+                    node_name = "mcp"
+            elif node_type == "webhook":
+                webhook_path = node_data.get("webhookPath")
+                if webhook_path:
+                    node_name = f"{node_type}.{webhook_path}"
+                else:
+                    node_name = "webhook"
+            elif node_type == "http_request":
+                method = node_data.get("method", "GET")
+                node_name = f"{node_type}.{method}"
+            elif node_type == "code":
+                language = node_data.get("language", "python")
+                node_name = f"{node_type}.{language}"
+            else:
+                # Final fallback: use node type if we can't determine a better name
+                node_name = node_type
         
         # Build n8n node
         n8n_node = {
             "id": node["id"],
             "name": node_name,
-            "type": f"adk-nodes-base.{node['type']}",
+            "type": node['type'],  # No prefix - just the node type
             "typeVersion": 1,
             "position": [node["position"]["x"], node["position"]["y"]],
             "parameters": {},
@@ -93,7 +141,7 @@ def transform_react_flow_to_n8n(
             if key not in excluded_params:
                 n8n_node["parameters"][key] = value
         
-        # Handle credentials (API keys)
+        # Handle credentials (API keys) - add to parameters instead of credentials section
         if "apiKey" in node_data and node_data["apiKey"]:
             # Reference credentials instead of storing directly
             credential_name = f"{node_name} API Key"
@@ -113,11 +161,10 @@ def transform_react_flow_to_n8n(
             else:
                 credential_type = "apiKey"
             
-            n8n_node["credentials"] = {
-                credential_type: {
-                    "id": credential_id,
-                    "name": credential_name
-                }
+            # Add credential info to parameters instead of credentials section
+            n8n_node["parameters"][credential_type] = {
+                "id": credential_id,
+                "name": credential_name
             }
         
         n8n_nodes.append(n8n_node)
@@ -229,9 +276,14 @@ def transform_n8n_to_react_flow(
     # Transform nodes
     react_nodes = []
     for node in nodes:
+        # Remove prefix if present (for backward compatibility), otherwise use as-is
+        node_type = node["type"]
+        if node_type.startswith("adk-nodes-base."):
+            node_type = node_type.replace("adk-nodes-base.", "")
+        
         react_node = {
             "id": node["id"],
-            "type": node["type"].replace("adk-nodes-base.", ""),
+            "type": node_type,
             "position": {
                 "x": node["position"][0],
                 "y": node["position"][1]
@@ -243,9 +295,14 @@ def transform_n8n_to_react_flow(
             "dragging": False,
         }
         
-        # Copy parameters back to data
+        # Copy parameters back to data (including credential info if present)
         for key, value in node.get("parameters", {}).items():
             react_node["data"][key] = value
+        
+        # Handle credentials from old format (if present) - convert to parameters in data
+        if "credentials" in node:
+            for cred_type, cred_info in node["credentials"].items():
+                react_node["data"][cred_type] = cred_info
         
         # Add isDisabled if present
         if node.get("disabled"):
