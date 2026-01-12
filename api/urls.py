@@ -28,6 +28,9 @@ urlpatterns = [
     # Webhook - Receive flow JSON from external platform
     path("webhook/flow/", views.webhook_flow_config, name="api_webhook_flow_config"),
     
+    # Webhook secret generation (for frontend when webhook node is added)
+    path("webhook/generate-secret/", views.generate_webhook_secret, name="api_generate_webhook_secret"),
+    
     # Cache management
     path("cache/invalidate/", views.invalidate_cache, name="api_invalidate_cache"),
     

@@ -887,14 +887,48 @@ def webhook_flow_config(request):
         else:
             trigger_type = "chat"  # Chat is default
         
-        # Extract webhook_path if webhook trigger exists
+        # Generate webhook_secret and URL if webhook trigger exists
         webhook_path = ""
+        webhook_secret = None
         if has_webhook_trigger:
+            # Extract webhook_secret from node data (if already generated)
             for node in nodes:
                 if node.get("type") == "webhook":
-                    webhook_data = node.get("data", {})
-                    webhook_path = webhook_data.get("webhookPath", "")
+                    node_data = node.get("data", {})
+                    webhook_secret = node_data.get("webhookSecret")
+                    webhook_path = node_data.get("webhookPath", "")
                     break
+            
+            # Generate new secret if not present
+            if not webhook_secret:
+                import secrets
+                webhook_secret = secrets.token_urlsafe(48)  # Longer for uniqueness
+            
+            # Ensure uniqueness (check for existing flows with same secret)
+            existing_flow = None
+            try:
+                existing_flow = Flow.objects.get(id=flow_uuid)
+            except Flow.DoesNotExist:
+                pass
+            
+            while Flow.objects.filter(webhook_secret=webhook_secret).exclude(id=flow_uuid).exists():
+                import secrets
+                webhook_secret = secrets.token_urlsafe(48)
+            
+            # Generate final webhook URL with REAL flow_id
+            from django.conf import settings
+            base_url = getattr(settings, 'WEBHOOK_BASE_URL', 'https://your-domain.com')
+            final_webhook_url = f"{base_url}/webhook/whatsapp/{webhook_secret}/"
+            
+            # Update node data with final URL
+            for node in nodes:
+                if node.get("type") == "webhook":
+                    node_data = node.get("data", {})
+                    node_data["webhookUrl"] = final_webhook_url
+                    node_data["webhookPath"] = final_webhook_url
+                    node_data["webhookSecret"] = webhook_secret
+            
+            webhook_path = final_webhook_url
         
         # Prepare React Flow format JSON (nodes, edges from frontend)
         react_flow_json = {
@@ -926,6 +960,7 @@ def webhook_flow_config(request):
                     "react_flow_json": react_flow_json,  # Store React Flow format
                     "trigger_type": trigger_type,
                     "webhook_path": webhook_path,
+                    "webhook_secret": webhook_secret if has_webhook_trigger else None,
                     "is_active": True,
                     "is_published": True,
                 }
@@ -937,7 +972,11 @@ def webhook_flow_config(request):
             else:
                 # Increment version on update
                 flow.version += 1
-                flow.save(update_fields=["version", "name", "description", "flow_json", "react_flow_json", "trigger_type", "webhook_path", "is_active", "is_published", "updated_at"])
+                update_fields = ["version", "name", "description", "flow_json", "react_flow_json", "trigger_type", "webhook_path", "is_active", "is_published", "updated_at"]
+                if has_webhook_trigger and webhook_secret:
+                    flow.webhook_secret = webhook_secret
+                    update_fields.append("webhook_secret")
+                flow.save(update_fields=update_fields)
                 logger.info(f"[WEBHOOK] Updated existing flow: {flow_name} (ID: {flow.id}, version: {flow.version})")
                 action = "updated"
             
@@ -953,7 +992,8 @@ def webhook_flow_config(request):
                 logger.warning(f"[WEBHOOK] Failed to invalidate cache: {e}")
             
             logger.info(f"[WEBHOOK] SUCCESS: Flow {action} successfully - {flow_name} (ID: {flow_id})")
-            return JsonResponse({
+            
+            response_data = {
                 "status": "success",
                 "message": f"Flow {action} successfully",
                 "data": {
@@ -963,7 +1003,14 @@ def webhook_flow_config(request):
                     "version": flow.version,
                     "trigger_type": flow.trigger_type,
                 }
-            })
+            }
+            
+            # Include webhook URL if webhook trigger exists
+            if has_webhook_trigger and flow.webhook_secret:
+                response_data["data"]["webhook_url"] = flow.get_webhook_url()
+                response_data["data"]["webhook_secret"] = flow.webhook_secret
+            
+            return JsonResponse(response_data)
             
         except Exception as e:
             logger.error(f"[WEBHOOK] ERROR: Failed to save flow to database: {e}", exc_info=True)
@@ -991,6 +1038,93 @@ def webhook_flow_config(request):
         return JsonResponse({
             "status": "error",
             "message": str(e)
+        }, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def generate_webhook_secret(request):
+    """
+    Generate a unique webhook secret and URL for a webhook node.
+    Called by frontend when webhook trigger node is added.
+    
+    POST /api/v1/webhook/generate-secret/
+    
+    Request body (optional):
+    {
+        "tenant_id": "uuid",  # Optional, for better validation
+        "existing_secret": "secret"  # Optional, to regenerate if needed
+    }
+    
+    Response:
+    {
+        "status": "success",
+        "webhook_secret": "xK9mP2qR7tY4wZ1bC5dF8gH3jK6nQ9sT2vW5...",
+        "webhook_url": "https://your-domain.com/webhook/whatsapp/xK9mP2qR7tY4wZ1bC5dF8gH3jK6nQ9sT2vW5.../",
+        "message": "Webhook secret generated successfully"
+    }
+    """
+    try:
+        import secrets
+        from django.conf import settings
+        
+        # Parse request body (optional)
+        data = {}
+        if request.body:
+            try:
+                data = json.loads(request.body)
+            except json.JSONDecodeError:
+                # Empty body is fine, use defaults
+                pass
+        
+        existing_secret = data.get("existing_secret")
+        tenant_id = data.get("tenant_id")
+        
+        # Generate new secret
+        webhook_secret = secrets.token_urlsafe(48)
+        
+        # If existing_secret provided, check if it conflicts
+        if existing_secret:
+            # Check if existing secret is already in use by another flow
+            if Flow.objects.filter(webhook_secret=existing_secret).exists():
+                # Regenerate
+                webhook_secret = secrets.token_urlsafe(48)
+            else:
+                # Existing secret is valid, can reuse it
+                webhook_secret = existing_secret
+        
+        # Ensure uniqueness - regenerate if conflicts with existing flows
+        max_attempts = 10
+        attempts = 0
+        while Flow.objects.filter(webhook_secret=webhook_secret).exists() and attempts < max_attempts:
+            webhook_secret = secrets.token_urlsafe(48)
+            attempts += 1
+        
+        if attempts >= max_attempts:
+            logger.error("Failed to generate unique webhook secret after 10 attempts")
+            return JsonResponse({
+                "status": "error",
+                "message": "Failed to generate unique webhook secret. Please try again."
+            }, status=500)
+        
+        # Generate webhook URL
+        base_url = getattr(settings, 'WEBHOOK_BASE_URL', 'https://your-domain.com')
+        webhook_url = f"{base_url}/webhook/whatsapp/{webhook_secret}/"
+        
+        logger.info(f"Generated webhook secret: {webhook_secret[:10]}... (tenant: {tenant_id})")
+        
+        return JsonResponse({
+            "status": "success",
+            "webhook_secret": webhook_secret,
+            "webhook_url": webhook_url,
+            "message": "Webhook secret generated successfully"
+        })
+        
+    except Exception as e:
+        logger.error(f"Error generating webhook secret: {str(e)}", exc_info=True)
+        return JsonResponse({
+            "status": "error",
+            "message": f"Failed to generate webhook secret: {str(e)}"
         }, status=500)
 
 

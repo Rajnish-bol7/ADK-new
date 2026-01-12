@@ -17,6 +17,9 @@ urlpatterns = [
     path("", chat_tester, name="chat_tester"),
     path("chat/", chat_tester, name="chat_tester_alt"),
     
+    # Webhook endpoints
+    path("webhook/", include("webhook.urls")),
+    
     # API endpoints
     path("api/v1/", include("api.urls")),
     path("api/v1/tenants/", list_tenants, name="api_list_tenants"),

@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "core",
     "flows",
     "api",
+    "webhook",
 ]
 
 # Channels configuration
@@ -170,6 +171,16 @@ CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes
 
 # Celery Beat Settings (for scheduled tasks)
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+
+# WhatsApp Webhook Configuration
+WHATSAPP_VERIFY_TOKEN = os.environ.get("WHATSAPP_VERIFY_TOKEN", "your_verify_token_here")
+WHATSAPP_ACCESS_TOKEN = os.environ.get("WHATSAPP_ACCESS_TOKEN", "")
+WHATSAPP_PHONE_NUMBER_ID = os.environ.get("WHATSAPP_PHONE_NUMBER_ID", "")
+WHATSAPP_API_VERSION = os.environ.get("WHATSAPP_API_VERSION", "v21.0")
+WHATSAPP_API_BASE_URL = f'https://graph.facebook.com/{WHATSAPP_API_VERSION}'
+
+# Webhook Base URL (for generating webhook URLs)
+WEBHOOK_BASE_URL = os.environ.get("WEBHOOK_BASE_URL", "https://your-domain.com")
 
 # Logging
 LOGGING = {

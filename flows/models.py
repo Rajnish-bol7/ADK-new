@@ -62,6 +62,18 @@ class Flow(models.Model):
     
     # Webhook settings (if trigger_type is webhook)
     webhook_path = models.CharField(max_length=255, blank=True, default="")
+    webhook_secret = models.CharField(
+        max_length=64,
+        unique=True,
+        blank=True,
+        null=True,
+        db_index=True,
+        help_text="Unique secret token for webhook URL (used for routing)"
+    )
+    webhook_verified = models.BooleanField(
+        default=False,
+        help_text="Whether webhook is verified with Meta"
+    )
     
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
@@ -75,6 +87,14 @@ class Flow(models.Model):
     
     def __str__(self):
         return f"{self.name} ({self.tenant.name})"
+    
+    def get_webhook_url(self):
+        """Get full webhook URL for this flow."""
+        if self.webhook_secret and self.trigger_type == 'webhook':
+            from django.conf import settings
+            base_url = getattr(settings, 'WEBHOOK_BASE_URL', 'https://your-domain.com')
+            return f"{base_url}/webhook/whatsapp/{self.webhook_secret}/"
+        return None
     
     def get_flow_schema(self):
         """Convert to FlowSchema for ADK integration."""
